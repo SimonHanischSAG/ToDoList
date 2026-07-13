@@ -35,8 +35,9 @@ jobs:
         env:
           # GitHub Pages deployt unter /ToDoList/ – SvelteKit braucht den base-Pfad
           BASE_PATH: /ToDoList
-          # Azure App Registration Client ID (als GitHub Secret hinterlegen)
-          VITE_AZURE_CLIENT_ID: ${{ secrets.VITE_AZURE_CLIENT_ID }}
+          # Azure App Registration Client ID (optional, als GitHub Secret hinterlegen)
+          # Ohne dieses Secret baut die App trotzdem – Login zeigt dann eine Fehlermeldung
+          VITE_AZURE_CLIENT_ID: ${{ secrets.VITE_AZURE_CLIENT_ID || 'CONFIGURE_ME' }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
