@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* iOS-Safari: Verhindert Zoom bei Input-Focus */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+	select, textarea, input[type="text"], input[type="date"],
+	input[type="search"], input[type="email"] {
+		font-size: 16px;
+	}
+}
+
+/* Scrollbar verstecken (für Area-Filter) */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* PWA: Safe-Area für iPhone Notch */
+body {
+	padding-top: env(safe-area-inset-top);
+	padding-bottom: env(safe-area-inset-bottom);
+}
