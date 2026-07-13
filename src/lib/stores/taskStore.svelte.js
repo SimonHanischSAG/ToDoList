@@ -1,12 +1,10 @@
 /**
  * Reaktiver Task-Store (Svelte 5 Runes)
- *
- * Zentraler State für alle Tasks der App.
- * Kapselt alle Lese- und Schreiboperationen gegen IndexedDB + OneDrive.
+ * Storage-Backend: Box statt OneDrive
  */
 
 import { db } from '../storage/db.js';
-import { schedulePush, syncFromOneDrive, retryFailedSyncs } from '../storage/onedrive.js';
+import { schedulePush, syncFromBox, retryFailedSyncs } from '../storage/box.js';
 import { rankTasks, getFocusTasks, getAreas } from '../engine/priority.js';
 import { createTask, normalizeTask } from '../model/task.js';
 
@@ -32,7 +30,6 @@ export const tasks = {
 	get syncing() { return _syncing; },
 	get error() { return _error; },
 
-	/** Gefilterte Tasks (nach Area + Suchbegriff) */
 	get filtered() {
 		let result = _tasks.filter(t => t.status === 'open');
 		if (_activeArea) result = result.filter(t => t.area === _activeArea);
@@ -48,12 +45,12 @@ export const tasks = {
 		return rankTasks(result);
 	},
 
-	/** Anzahl offener Tasks pro Area */
 	get countByArea() {
 		/** @type {Record<string, number>} */
 		const counts = {};
 		for (const t of _tasks.filter(t => t.status === 'open')) {
-			counts[t.area || '(kein Bereich)'] = (counts[t.area || '(kein Bereich)'] ?? 0) + 1;
+			const key = t.area || '(kein Bereich)';
+			counts[key] = (counts[key] ?? 0) + 1;
 		}
 		return counts;
 	}
@@ -61,7 +58,6 @@ export const tasks = {
 
 // ── Aktionen ───────────────────────────────────────────────────────────────
 
-/** Lädt alle Tasks aus der lokalen IndexedDB */
 export async function loadTasks() {
 	_loading = true;
 	_error = null;
@@ -75,13 +71,12 @@ export async function loadTasks() {
 	}
 }
 
-/** Startet den initialen Sync von OneDrive */
 export async function initialSync() {
 	_syncing = true;
 	_error = null;
 	try {
 		await retryFailedSyncs();
-		await syncFromOneDrive();
+		await syncFromBox();
 		await loadTasks();
 	} catch (err) {
 		_error = `Sync-Fehler: ${err}`;
@@ -90,10 +85,7 @@ export async function initialSync() {
 	}
 }
 
-/**
- * Erstellt einen neuen Task
- * @param {Partial<import('../model/task.js').Task>} data
- */
+/** @param {Partial<import('../model/task.js').Task>} data */
 export async function addTask(data) {
 	const task = createTask({ ...data, area: data.area ?? _activeArea });
 	await db.tasks.add(task);
@@ -102,7 +94,6 @@ export async function addTask(data) {
 }
 
 /**
- * Aktualisiert einen bestehenden Task
  * @param {string} id
  * @param {Partial<import('../model/task.js').Task>} changes
  */
@@ -113,29 +104,19 @@ export async function updateTask(id, changes) {
 	schedulePush();
 }
 
-/**
- * Setzt den Status eines Tasks
- * @param {string} id
- * @param {import('../model/task.js').TaskStatus} status
- */
+/** @param {string} id @param {import('../model/task.js').TaskStatus} status */
 export async function setStatus(id, status) {
 	await updateTask(id, { status });
 }
 
-/**
- * Löscht einen Task permanent
- * @param {string} id
- */
+/** @param {string} id */
 export async function deleteTask(id) {
 	await db.tasks.delete(id);
 	_tasks = _tasks.filter(t => t.id !== id);
 	schedulePush();
 }
 
-/**
- * Importiert Tasks aus einem Array (z.B. Excel-Migration)
- * @param {unknown[]} rawTasks
- */
+/** @param {unknown[]} rawTasks */
 export async function importTasks(rawTasks) {
 	const normalized = rawTasks.map(normalizeTask);
 	await db.tasks.bulkPut(normalized);
