@@ -7,21 +7,21 @@
 /** @typedef {'urgent' | 'high' | 'normal' | 'low'} TaskPriority */
 
 /**
- * @typedef {Object} Task
- * @property {string}       id          - UUID v4
- * @property {string}       title       - Kurzer Titel (erste Zeile des ToDo)
- * @property {string}       description - Mehrzeilige Beschreibung / Details
- * @property {TaskStatus}   status
- * @property {TaskPriority} priority
- * @property {string}       area        - Umfeld (z.B. "MFT", "SelfEdi")
- * @property {string}       customer    - Kunde (z.B. "L", "Ö", "Int") – optional
- * @property {string[]}     tags        - Freie Tags
- * @property {string[]}     blockedBy   - IDs von Tasks, die diesen Task blockieren
- * @property {string|null}  dueDate     - ISO-Datum "YYYY-MM-DD" oder null
- * @property {string}       createdAt   - ISO 8601
- * @property {string}       updatedAt   - ISO 8601
- * @property {number}       score       - Berechneter Prio-Score (0–100, read-only)
- */
+* @typedef {Object} Task
+* @property {string}       id          - UUID v4
+* @property {string}       title       - Kurzer Titel (erste Zeile des ToDo)
+* @property {string}       description - Mehrzeilige Beschreibung / Details
+* @property {TaskStatus}   status
+* @property {TaskPriority} priority
+* @property {string}       area        - Umfeld (z.B. "MFT", "SelfEdi")
+* @property {string}       topic       - Thema (z.B. "Review", "Deployment") – optional
+* @property {string[]}     tags        - Freie Tags
+* @property {string[]}     blockedBy   - IDs von Tasks, die diesen Task blockieren
+* @property {string|null}  dueDate     - ISO-Datum "YYYY-MM-DD" oder null
+* @property {string}       createdAt   - ISO 8601
+* @property {string}       updatedAt   - ISO 8601
+* @property {number}       score       - Berechneter Prio-Score (0–100, read-only)
+*/
 
 /**
  * Erstellt einen neuen leeren Task mit Defaults
@@ -37,7 +37,7 @@ export function createTask(overrides = {}) {
 		status: 'open',
 		priority: 'normal',
 		area: '',
-		customer: '',
+		topic: '',
 		tags: [],
 		blockedBy: [],
 		dueDate: null,
@@ -60,8 +60,8 @@ export function normalizeTask(raw) {
 		description: String(raw.description ?? raw.ToDo ?? ''),
 		status: mapStatus(raw.status ?? raw.Status),
 		priority: mapPriority(raw.priority ?? raw.Prio),
-		area: String(raw.area ?? raw.Umfeld ?? ''),
-		customer: String(raw.customer ?? raw.Kunde ?? ''),
+		area:  String(raw.area  ?? raw.Umfeld ?? ''),
+		topic: String(raw.topic ?? raw.Kunde  ?? ''),
 		tags: Array.isArray(raw.tags) ? raw.tags : [],
 		blockedBy: Array.isArray(raw.blockedBy) ? raw.blockedBy : [],
 		dueDate: raw.dueDate ? String(raw.dueDate) : null,

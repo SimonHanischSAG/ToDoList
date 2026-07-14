@@ -4,8 +4,7 @@
   Wird ohne task-Prop aufgerufen → Neu-Modus (leer)
 -->
 <script>
-	import { addTask, updateTask } from '$lib/stores/taskStore.svelte.js';
-	import { tasks } from '$lib/stores/taskStore.svelte.js';
+	import { addTask, updateTask, tasks } from '$lib/stores/taskStore.svelte.js';
 
 	/**
 	 * @type {{
@@ -23,7 +22,7 @@
 	let description = $state(t?.description ?? '');
 	let priority    = $state(/** @type {import('$lib/model/task.js').TaskPriority} */ (t?.priority ?? 'normal'));
 	let area        = $state(t?.area        ?? tasks.activeArea ?? '');
-	let customer    = $state(t?.customer    ?? '');
+	let topic       = $state(t?.topic       ?? '');
 	let dueDate     = $state(t?.dueDate     ?? '');
 	let saving      = $state(false);
 
@@ -37,7 +36,7 @@
 					description: description.trim(),
 					priority,
 					area:        area.trim(),
-					customer:    customer.trim(),
+					topic:       topic.trim(),
 					dueDate:     dueDate || null
 				});
 			} else {
@@ -46,7 +45,7 @@
 					description: description.trim(),
 					priority,
 					area:        area.trim(),
-					customer:    customer.trim(),
+					topic:       topic.trim(),
 					dueDate:     dueDate || null
 				});
 			}
@@ -97,7 +96,7 @@
 				></textarea>
 			</div>
 
-			<!-- Priorität + Area (2 Spalten) -->
+			<!-- Priorität + Umfeld (2 Spalten) -->
 			<div class="grid grid-cols-2 gap-3">
 				<div>
 					<label class="block text-xs font-semibold text-ibm-text-muted mb-1" for="task-prio">Priorität</label>
@@ -128,17 +127,21 @@
 				</div>
 			</div>
 
-			<!-- Kunde + Deadline (2 Spalten) -->
+			<!-- Thema + Deadline (2 Spalten) -->
 			<div class="grid grid-cols-2 gap-3">
 				<div>
-					<label class="block text-xs font-semibold text-ibm-text-muted mb-1" for="task-customer">Kunde</label>
+					<label class="block text-xs font-semibold text-ibm-text-muted mb-1" for="task-topic">Thema</label>
 					<input
-						id="task-customer"
+						id="task-topic"
 						type="text"
-						bind:value={customer}
-						placeholder="z.B. L, Ö, Int…"
+						bind:value={topic}
+						placeholder="z.B. Review, Deploy…"
+						list="topic-suggestions"
 						class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
 					/>
+					<datalist id="topic-suggestions">
+						{#each tasks.topics as tp}<option value={tp}></option>{/each}
+					</datalist>
 				</div>
 				<div>
 					<label class="block text-xs font-semibold text-ibm-text-muted mb-1" for="task-due">Deadline</label>

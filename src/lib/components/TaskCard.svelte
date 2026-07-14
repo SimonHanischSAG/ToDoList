@@ -80,9 +80,9 @@
 					<span class="text-xs border px-2 py-0.5 rounded {PRIORITY_COLORS[task.priority]}">
 						{PRIORITY_LABELS[task.priority]}
 					</span>
-					{#if task.customer}
-						<span class="text-xs text-ibm-text-muted">Kunde: {task.customer}</span>
-					{/if}
+					{#if task.topic}
+							<span class="text-xs text-ibm-text-muted">Thema: {task.topic}</span>
+						{/if}
 					{#if deadline}
 						<span class="text-xs {isOverdue ? 'text-red-600 font-semibold' : 'text-orange-600'}">
 							⏰ {deadline}

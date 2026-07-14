@@ -5,7 +5,7 @@
 
 import { db } from '../storage/db.js';
 import { schedulePush, syncFromStorage, retryFailedSyncs } from '../storage/index.js';
-import { rankTasks, getFocusTasks, getAreas } from '../engine/priority.js';
+import { rankTasks, getFocusTasks, getAreas, getTopics } from '../engine/priority.js';
 import { createTask, normalizeTask } from '../model/task.js';
 
 // ── State (Svelte 5 Runes) ─────────────────────────────────────────────────
@@ -21,7 +21,8 @@ export const tasks = {
 	get all() { return _tasks; },
 	get ranked() { return rankTasks(_tasks); },
 	get focus() { return getFocusTasks(_tasks, { area: _activeArea }); },
-	get areas() { return getAreas(_tasks); },
+	get areas()  { return getAreas(_tasks); },
+	get topics() { return getTopics(_tasks); },
 	get activeArea() { return _activeArea; },
 	set activeArea(v) { _activeArea = v; },
 	get searchQuery() { return _searchQuery; },

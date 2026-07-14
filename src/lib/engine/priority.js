@@ -93,6 +93,15 @@ export function getAreas(tasks) {
 	return [...new Set(tasks.map((t) => t.area).filter(Boolean))].sort();
 }
 
+/**
+ * Gibt alle verwendeten Themen aus den Tasks zurück.
+ * @param {Task[]} tasks
+ * @returns {string[]}
+ */
+export function getTopics(tasks) {
+	return [...new Set(tasks.map((t) => t.topic).filter(Boolean))].sort();
+}
+
 /** @param {Task} task @param {Task[]} allTasks @returns {boolean} */
 function isBlocked(task, allTasks) {
 	return task.blockedBy.some((id) => {
