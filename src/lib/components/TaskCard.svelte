@@ -1,8 +1,10 @@
 <!--
   TaskCard – zeigt einen einzelnen Task in der Liste an
-  Zeigt Score als farbigen Balken, Priority-Badge, Area und Deadline.
+  Klick auf Titel → Inline-Edit-Modus
 -->
 <script>
+	import TaskForm from './TaskForm.svelte';
+
 	/** @type {{ task: import('$lib/model/task.js').Task, ondone: () => void, ondelete: () => void }} */
 	let { task, ondone, ondelete } = $props();
 
@@ -15,7 +17,6 @@
 
 	const PRIORITY_LABELS = { urgent: 'Kritisch', high: 'Hoch', normal: 'Normal', low: 'Niedrig' };
 
-	/** Farbe des Score-Balkens */
 	function scoreColor(score) {
 		if (score >= 75) return 'bg-red-500';
 		if (score >= 50) return 'bg-orange-400';
@@ -23,7 +24,6 @@
 		return 'bg-gray-300';
 	}
 
-	/** Deadline-Text */
 	function deadlineText(dueDate) {
 		if (!dueDate) return null;
 		const days = Math.round((new Date(dueDate) - new Date()) / 86400000);
@@ -34,9 +34,16 @@
 	}
 
 	let expanded = $state(false);
-	const deadline = $derived(deadlineText(task.dueDate));
-	const isOverdue = $derived(task.dueDate && new Date(task.dueDate) < new Date());
+	let editing  = $state(false);
+
+	const deadline  = $derived(deadlineText(task.dueDate));
+	const isOverdue = $derived(!!task.dueDate && new Date(task.dueDate) < new Date());
 </script>
+
+<!-- Edit-Modal -->
+{#if editing}
+	<TaskForm task={task} onclose={() => editing = false} />
+{/if}
 
 <div class="bg-white border border-ibm-gray-dark rounded-md overflow-hidden hover:shadow-sm transition-shadow">
 	<!-- Score-Balken oben -->
@@ -54,12 +61,15 @@
 
 			<!-- Hauptinhalt -->
 			<div class="flex-1 min-w-0">
-				<!-- Titel -->
+				<!-- Titel: Klick → Edit -->
 				<button
-					onclick={() => expanded = !expanded}
-					class="text-left w-full"
+					onclick={() => editing = true}
+					class="text-left w-full group"
+					title="Task bearbeiten"
 				>
-					<span class="text-sm font-medium text-ibm-text leading-snug block">{task.title || '(kein Titel)'}</span>
+					<span class="text-sm font-medium text-ibm-text leading-snug block group-hover:text-ibm-blue transition-colors">
+						{task.title || '(kein Titel)'}
+					</span>
 				</button>
 
 				<!-- Meta-Zeile -->
@@ -103,13 +113,23 @@
 				{/if}
 			</div>
 
-			<!-- Löschen -->
-			<button
-				onclick={ondelete}
-				class="text-ibm-gray-dark hover:text-red-500 transition-colors flex-shrink-0 p-1"
-				title="Task löschen"
-				aria-label="Löschen"
-			>✕</button>
+			<!-- Aktionen: Details + Löschen -->
+			<div class="flex items-center gap-1 flex-shrink-0">
+				{#if task.description || task.tags.length > 0}
+					<button
+						onclick={() => expanded = !expanded}
+						class="text-ibm-text-muted hover:text-ibm-text transition-colors p-1 text-xs"
+						title={expanded ? 'Weniger anzeigen' : 'Details anzeigen'}
+						aria-label="Details"
+					>{expanded ? '▲' : '▼'}</button>
+				{/if}
+				<button
+					onclick={ondelete}
+					class="text-ibm-gray-dark hover:text-red-500 transition-colors p-1"
+					title="Task löschen"
+					aria-label="Löschen"
+				>✕</button>
+			</div>
 		</div>
 	</div>
 </div>

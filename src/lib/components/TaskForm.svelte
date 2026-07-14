@@ -1,33 +1,55 @@
 <!--
-  TaskForm – Modal zum Erstellen eines neuen Tasks
+  TaskForm – Modal zum Erstellen oder Bearbeiten eines Tasks
+  Wird mit task-Prop aufgerufen → Edit-Modus (vorausgefüllt)
+  Wird ohne task-Prop aufgerufen → Neu-Modus (leer)
 -->
 <script>
-	import { addTask } from '$lib/stores/taskStore.svelte.js';
+	import { addTask, updateTask } from '$lib/stores/taskStore.svelte.js';
 	import { tasks } from '$lib/stores/taskStore.svelte.js';
 
-	/** @type {{ onclose: () => void }} */
-	let { onclose } = $props();
+	/**
+	 * @type {{
+	 *   task?: import('$lib/model/task.js').Task,
+	 *   onclose: () => void
+	 * }}
+	 */
+	let { task = undefined, onclose } = $props();
 
-	let title = $state('');
-	let description = $state('');
-	let priority = $state(/** @type {import('$lib/model/task.js').TaskPriority} */ ('normal'));
-	let area = $state(tasks.activeArea ?? '');
-	let customer = $state('');
-	let dueDate = $state('');
-	let saving = $state(false);
+	// task-Prop ist beim Öffnen fix → einmalige Initialisierung ist korrekt
+	const t      = task;
+	const isEdit = !!t;
+
+	let title       = $state(t?.title       ?? '');
+	let description = $state(t?.description ?? '');
+	let priority    = $state(/** @type {import('$lib/model/task.js').TaskPriority} */ (t?.priority ?? 'normal'));
+	let area        = $state(t?.area        ?? tasks.activeArea ?? '');
+	let customer    = $state(t?.customer    ?? '');
+	let dueDate     = $state(t?.dueDate     ?? '');
+	let saving      = $state(false);
 
 	async function handleSubmit() {
 		if (!title.trim()) return;
 		saving = true;
 		try {
-			await addTask({
-				title: title.trim(),
-				description: description.trim(),
-				priority,
-				area: area.trim(),
-				customer: customer.trim(),
-				dueDate: dueDate || null
-			});
+			if (isEdit && t) {
+				await updateTask(t.id, {
+					title:       title.trim(),
+					description: description.trim(),
+					priority,
+					area:        area.trim(),
+					customer:    customer.trim(),
+					dueDate:     dueDate || null
+				});
+			} else {
+				await addTask({
+					title:       title.trim(),
+					description: description.trim(),
+					priority,
+					area:        area.trim(),
+					customer:    customer.trim(),
+					dueDate:     dueDate || null
+				});
+			}
 			onclose();
 		} finally {
 			saving = false;
@@ -39,14 +61,13 @@
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
 <dialog
 	class="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-4 m-0 w-full h-full max-w-none max-h-none border-0"
-	aria-label="Neuer Task"
+	aria-label={isEdit ? 'Task bearbeiten' : 'Neuer Task'}
 	onclick={(e) => e.target === e.currentTarget && onclose()}
 	open
 >
-	<!-- Modal -->
 	<div class="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-md p-5 space-y-4 shadow-xl">
 		<div class="flex items-center justify-between">
-			<h2 class="font-bold text-ibm-text">Neuer Task</h2>
+			<h2 class="font-bold text-ibm-text">{isEdit ? 'Task bearbeiten' : 'Neuer Task'}</h2>
 			<button onclick={onclose} class="text-ibm-text-muted hover:text-ibm-text" aria-label="Schließen">✕</button>
 		</div>
 
@@ -136,7 +157,7 @@
 				disabled={saving || !title.trim()}
 				class="w-full bg-ibm-blue hover:bg-ibm-blue-dark disabled:opacity-50 text-white font-semibold py-2.5 rounded-md text-sm transition-colors"
 			>
-				{saving ? 'Wird gespeichert…' : 'Task speichern'}
+				{saving ? 'Wird gespeichert…' : isEdit ? 'Änderungen speichern' : 'Task speichern'}
 			</button>
 		</form>
 	</div>
