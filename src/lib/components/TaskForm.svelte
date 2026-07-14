@@ -64,7 +64,7 @@
 	onclick={(e) => e.target === e.currentTarget && onclose()}
 	open
 >
-	<div class="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-md p-5 space-y-4 shadow-xl">
+	<div class="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-2xl p-8 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
 		<div class="flex items-center justify-between">
 			<h2 class="font-bold text-ibm-text">{isEdit ? 'Task bearbeiten' : 'Neuer Task'}</h2>
 			<button onclick={onclose} class="text-ibm-text-muted hover:text-ibm-text" aria-label="Schließen">✕</button>
@@ -90,7 +90,7 @@
 				<textarea
 					id="task-desc"
 					bind:value={description}
-					rows="3"
+					rows="5"
 					placeholder="Weitere Details, Kontext, Links…"
 					class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue resize-none"
 				></textarea>
@@ -117,7 +117,6 @@
 						id="task-area"
 						type="text"
 						bind:value={area}
-						placeholder="z.B. MFT, SelfEdi…"
 						list="area-suggestions"
 						class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
 					/>
@@ -135,7 +134,6 @@
 						id="task-topic"
 						type="text"
 						bind:value={topic}
-						placeholder="z.B. Review, Deploy…"
 						list="topic-suggestions"
 						class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
 					/>
