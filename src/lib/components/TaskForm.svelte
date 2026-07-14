@@ -26,6 +26,44 @@
 	let dueDate     = $state(t?.dueDate     ?? '');
 	let saving      = $state(false);
 
+	/** Gibt ein Datum als YYYY-MM-DD-String zurück */
+	function toDateStr(date) {
+		return date.toISOString().slice(0, 10);
+	}
+
+	const quickDates = [
+		{
+			label: 'Heute',
+			fn: () => toDateStr(new Date())
+		},
+		{
+			label: 'Diese Woche',
+			fn: () => {
+				const d = new Date();
+				// Auf Sonntag (Ende der Woche) auffüllen
+				const day = d.getDay(); // 0 = So, 1 = Mo, …
+				const diff = day === 0 ? 0 : 7 - day;
+				d.setDate(d.getDate() + diff);
+				return toDateStr(d);
+			}
+		},
+		{
+			label: 'Dieser Monat',
+			fn: () => {
+				const d = new Date();
+				return toDateStr(new Date(d.getFullYear(), d.getMonth() + 1, 0));
+			}
+		},
+		{
+			label: 'Dieses Quartal',
+			fn: () => {
+				const d = new Date();
+				const quarterEndMonth = Math.floor(d.getMonth() / 3) * 3 + 3; // 3, 6, 9 oder 12
+				return toDateStr(new Date(d.getFullYear(), quarterEndMonth, 0));
+			}
+		}
+	];
+
 	async function handleSubmit() {
 		if (!title.trim()) return;
 		saving = true;
@@ -149,6 +187,15 @@
 						bind:value={dueDate}
 						class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
 					/>
+					<div class="flex flex-wrap gap-1 mt-1.5">
+						{#each quickDates as qd}
+							<button
+								type="button"
+								onclick={() => (dueDate = qd.fn())}
+								class="text-xs px-2 py-0.5 rounded border border-ibm-gray-dark text-ibm-text-muted hover:border-ibm-blue hover:text-ibm-blue transition-colors"
+							>{qd.label}</button>
+						{/each}
+					</div>
 				</div>
 			</div>
 
