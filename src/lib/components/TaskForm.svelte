@@ -5,6 +5,7 @@
 -->
 <script>
 	import { addTask, updateTask, tasks } from '$lib/stores/taskStore.svelte.js';
+	import RichTextEditor from './RichTextEditor.svelte';
 
 	/**
 	 * @type {{
@@ -124,14 +125,8 @@
 
 			<!-- Beschreibung -->
 			<div>
-				<label class="block text-xs font-semibold text-ibm-text-muted mb-1" for="task-desc">Details (optional)</label>
-				<textarea
-					id="task-desc"
-					bind:value={description}
-					rows="5"
-					placeholder="Weitere Details, Kontext, Links…"
-					class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue resize-none"
-				></textarea>
+				<label class="block text-xs font-semibold text-ibm-text-muted mb-1">Details (optional)</label>
+				<RichTextEditor bind:value={description} />
 			</div>
 
 			<!-- Priorität + Umfeld (2 Spalten) -->

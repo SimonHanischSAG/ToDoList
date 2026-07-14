@@ -1,0 +1,168 @@
+<!--
+  RichTextEditor – Tiptap-basierter Mini-Editor
+  Unterstützt: Fett, Unterstrichen, Aufzählungsliste (•), Nummerierte Liste, Einrücken
+  Props:
+    value (string) – HTML-Inhalt (bind:value)
+    placeholder (string) – Platzhaltertext
+-->
+<script>
+	import { onMount, onDestroy } from 'svelte';
+	import { Editor } from '@tiptap/core';
+	import Document    from '@tiptap/extension-document';
+	import Paragraph   from '@tiptap/extension-paragraph';
+	import Text        from '@tiptap/extension-text';
+	import Bold        from '@tiptap/extension-bold';
+	import Underline   from '@tiptap/extension-underline';
+	import BulletList  from '@tiptap/extension-bullet-list';
+	import OrderedList from '@tiptap/extension-ordered-list';
+	import ListItem    from '@tiptap/extension-list-item';
+	import History     from '@tiptap/extension-history';
+
+	/** @type {{ value: string, placeholder?: string }} */
+	let { value = $bindable(''), placeholder = 'Weitere Details, Kontext, Links…' } = $props();
+
+	/** @type {HTMLDivElement} */
+	let editorEl;
+	/** @type {Editor} */
+	let editor;
+
+	onMount(() => {
+		editor = new Editor({
+			element: editorEl,
+			extensions: [Document, Paragraph, Text, Bold, Underline, BulletList, OrderedList, ListItem, History],
+			content: value || '',
+			onUpdate: ({ editor }) => {
+				const html = editor.getHTML();
+				// Leerer Editor → leerer String
+				value = html === '<p></p>' ? '' : html;
+			}
+		});
+	});
+
+	onDestroy(() => editor?.destroy());
+
+	// Externe value-Änderung (z.B. Reset) in den Editor spiegeln
+	$effect(() => {
+		if (editor && !editor.isDestroyed) {
+			const current = editor.getHTML();
+			const next = value || '';
+			if (current !== next && !(current === '<p></p>' && next === '')) {
+				editor.commands.setContent(next, false);
+			}
+		}
+	});
+
+	function cmd(command) {
+		editor?.chain().focus()[command]().run();
+	}
+
+	function isActive(name, attrs = {}) {
+		return editor?.isActive(name, attrs) ?? false;
+	}
+
+	// Reaktive Toolbar-Zustände
+	let isBold      = $state(false);
+	let isUnderline = $state(false);
+	let isBullet    = $state(false);
+	let isOrdered   = $state(false);
+
+	onMount(() => {
+		editor.on('selectionUpdate', updateToolbar);
+		editor.on('transaction',     updateToolbar);
+	});
+
+	function updateToolbar() {
+		isBold      = editor.isActive('bold');
+		isUnderline = editor.isActive('underline');
+		isBullet    = editor.isActive('bulletList');
+		isOrdered   = editor.isActive('orderedList');
+	}
+</script>
+
+<div class="border border-ibm-gray-dark rounded-md overflow-hidden focus-within:ring-2 focus-within:ring-ibm-blue">
+	<!-- Toolbar -->
+	<div class="flex items-center gap-0.5 px-2 py-1 border-b border-ibm-gray-dark bg-gray-50">
+		<button
+			type="button"
+			onclick={() => cmd('toggleBold')}
+			class="toolbar-btn font-bold {isBold ? 'active' : ''}"
+			title="Fett (Strg+B)"
+		>B</button>
+
+		<button
+			type="button"
+			onclick={() => cmd('toggleUnderline')}
+			class="toolbar-btn underline {isUnderline ? 'active' : ''}"
+			title="Unterstrichen (Strg+U)"
+		>U</button>
+
+		<div class="w-px h-4 bg-ibm-gray-dark mx-1"></div>
+
+		<button
+			type="button"
+			onclick={() => cmd('toggleBulletList')}
+			class="toolbar-btn {isBullet ? 'active' : ''}"
+			title="Aufzählungsliste"
+		>• Liste</button>
+
+		<button
+			type="button"
+			onclick={() => cmd('toggleOrderedList')}
+			class="toolbar-btn {isOrdered ? 'active' : ''}"
+			title="Nummerierte Liste"
+		>1. Liste</button>
+	</div>
+
+	<!-- Editor-Bereich -->
+	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+	<div
+		bind:this={editorEl}
+		class="rich-editor px-3 py-2 text-sm min-h-[7rem] focus:outline-none"
+		data-placeholder={placeholder}
+	></div>
+</div>
+
+<style>
+	/* Platzhalter */
+	.rich-editor :global(.tiptap p.is-editor-empty:first-child::before) {
+		content: attr(data-placeholder);
+		color: #9ca3af;
+		pointer-events: none;
+		float: left;
+		height: 0;
+	}
+	/* Placeholder über data-attr am Wrapper */
+	.rich-editor:has(:global(.tiptap > p:only-child:empty))::before {
+		content: attr(data-placeholder);
+		color: #9ca3af;
+		position: absolute;
+		pointer-events: none;
+	}
+
+	/* Listen-Styling */
+	.rich-editor :global(ul) { list-style: disc; padding-left: 1.25rem; }
+	.rich-editor :global(ol) { list-style: decimal; padding-left: 1.25rem; }
+	.rich-editor :global(li) { margin: 0.1rem 0; }
+	.rich-editor :global(li > p) { margin: 0; }
+
+	/* Toolbar-Buttons */
+	:global(.toolbar-btn) {
+		padding: 0.15rem 0.5rem;
+		border-radius: 0.25rem;
+		font-size: 0.75rem;
+		color: #57606a;
+		transition: background 0.1s, color 0.1s;
+		cursor: pointer;
+		border: 1px solid transparent;
+		background: transparent;
+	}
+	:global(.toolbar-btn:hover) {
+		background: #e5e7eb;
+		color: #1f2328;
+	}
+	:global(.toolbar-btn.active) {
+		background: #dbeafe;
+		color: #1d4ed8;
+		border-color: #bfdbfe;
+	}
+</style>

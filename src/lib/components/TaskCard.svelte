@@ -95,9 +95,10 @@
 				{#if expanded && (task.description || task.tags.length > 0 || task.blockedBy.length > 0)}
 					<div class="mt-2 pt-2 border-t border-ibm-gray-dark space-y-1.5">
 						{#if task.description && task.description !== task.title}
-							<p class="text-xs text-ibm-text-muted whitespace-pre-wrap leading-relaxed">
-								{task.description.slice(0, 400)}{task.description.length > 400 ? '…' : ''}
-							</p>
+							<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+							<div class="text-xs text-ibm-text-muted leading-relaxed rich-content">
+								{@html task.description}
+							</div>
 						{/if}
 						{#if task.tags.length > 0}
 							<div class="flex flex-wrap gap-1">
