@@ -4,7 +4,7 @@
  */
 
 import { db } from '../storage/db.js';
-import { schedulePush, syncFromBox, retryFailedSyncs } from '../storage/box.js';
+import { schedulePush, syncFromStorage, retryFailedSyncs } from '../storage/index.js';
 import { rankTasks, getFocusTasks, getAreas } from '../engine/priority.js';
 import { createTask, normalizeTask } from '../model/task.js';
 
@@ -76,7 +76,7 @@ export async function initialSync() {
 	_error = null;
 	try {
 		await retryFailedSyncs();
-		await syncFromBox();
+		await syncFromStorage();
 		await loadTasks();
 	} catch (err) {
 		_error = `Sync-Fehler: ${err}`;
