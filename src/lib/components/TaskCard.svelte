@@ -5,8 +5,8 @@
 <script>
 	import TaskForm from './TaskForm.svelte';
 
-	/** @type {{ task: import('$lib/model/task.js').Task, ondone: () => void, ondelete: () => void }} */
-	let { task, ondone, ondelete } = $props();
+	/** @type {{ task: import('$lib/model/task.js').Task, verbose?: boolean, ondone: () => void, ondelete: () => void }} */
+	let { task, verbose = false, ondone, ondelete } = $props();
 
 	const PRIORITY_COLORS = {
 		urgent: 'bg-red-100 text-red-800 border-red-200',
@@ -33,8 +33,11 @@
 		return `In ${days} Tagen fällig`;
 	}
 
-	let expanded = $state(false);
-	let editing  = $state(false);
+	let _expanded = $state(false);
+	let editing   = $state(false);
+
+	// Im Verbose-Mode immer aufgeklappt; sonst manuell steuerbar
+	const expanded = $derived(verbose || _expanded);
 
 	const deadline  = $derived(deadlineText(task.dueDate));
 	const isOverdue = $derived(!!task.dueDate && new Date(task.dueDate) < new Date());
@@ -92,8 +95,13 @@
 				</div>
 
 				<!-- Expanded: Beschreibung + Tags + Blockiert-durch -->
-				{#if expanded && (task.description || task.tags.length > 0 || task.blockedBy.length > 0)}
+				{#if expanded && (task.description || task.tags.length > 0 || task.blockedBy.length > 0 || task.dueDate)}
 					<div class="mt-2 pt-2 border-t border-ibm-gray-dark space-y-1.5">
+						{#if verbose && task.dueDate}
+							<p class="text-xs text-ibm-text-muted">
+								Deadline: <span class="{isOverdue ? 'text-red-600 font-semibold' : 'text-orange-600'}">{task.dueDate}</span>
+							</p>
+						{/if}
 						{#if task.description && task.description !== task.title}
 							<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 							<div class="text-xs text-ibm-text-muted leading-relaxed rich-content">
@@ -115,15 +123,15 @@
 			</div>
 
 			<!-- Aktionen: Details + Löschen -->
-			<div class="flex items-center gap-1 flex-shrink-0">
-				{#if task.description || task.tags.length > 0}
-					<button
-						onclick={() => expanded = !expanded}
-						class="text-ibm-text-muted hover:text-ibm-text transition-colors p-1 text-xs"
-						title={expanded ? 'Weniger anzeigen' : 'Details anzeigen'}
-						aria-label="Details"
-					>{expanded ? '▲' : '▼'}</button>
-				{/if}
+				<div class="flex items-center gap-1 flex-shrink-0">
+					{#if !verbose && (task.description || task.tags.length > 0)}
+						<button
+							onclick={() => _expanded = !_expanded}
+							class="text-ibm-text-muted hover:text-ibm-text transition-colors p-1 text-xs"
+							title={_expanded ? 'Weniger anzeigen' : 'Details anzeigen'}
+							aria-label="Details"
+						>{_expanded ? '▲' : '▼'}</button>
+					{/if}
 				<button
 					onclick={ondelete}
 					class="text-ibm-gray-dark hover:text-red-500 transition-colors p-1"

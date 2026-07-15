@@ -8,8 +8,9 @@
 	import FocusView from '$lib/components/FocusView.svelte';
 	import TaskForm from '$lib/components/TaskForm.svelte';
 
-	let showFocus = $state(false);
-	let showForm = $state(false);
+	let showFocus   = $state(false);
+	let showVerbose = $state(false);
+	let showForm    = $state(false);
 </script>
 
 <div class="max-w-2xl mx-auto px-4 py-4">
@@ -30,10 +31,19 @@
 	<!-- Aktionsleiste -->
 	<div class="flex gap-2 mb-4">
 		<button
-			onclick={() => showFocus = !showFocus}
+			onclick={() => { showFocus = !showFocus; if (showFocus) showVerbose = false; }}
 			class="flex-1 bg-ibm-blue text-white text-sm font-semibold py-2 px-3 rounded-md hover:bg-ibm-blue-dark transition-colors"
 		>
-			{showFocus ? '← Alle Tasks' : '⭐ Focus-Modus'}
+			{showFocus ? '← Alle Tasks' : '⭐ Focus'}
+		</button>
+		<button
+			onclick={() => { showVerbose = !showVerbose; if (showVerbose) showFocus = false; }}
+			class="flex-1 text-sm font-semibold py-2 px-3 rounded-md border transition-colors
+				{showVerbose
+					? 'bg-ibm-blue text-white border-ibm-blue hover:bg-ibm-blue-dark'
+					: 'bg-white border-ibm-gray-dark text-ibm-text hover:bg-ibm-gray'}"
+		>
+			{showVerbose ? '← Kompakt' : '☰ Verbose'}
 		</button>
 		<button
 			onclick={() => showForm = true}
@@ -75,16 +85,17 @@
 			</div>
 		{:else}
 			<ul class="space-y-2">
-				{#each tasks.filtered as task (task.id)}
-					<li>
-						<TaskCard
-							{task}
-							ondone={() => setStatus(task.id, 'done')}
-							ondelete={() => deleteTask(task.id)}
-						/>
-					</li>
-				{/each}
-			</ul>
+					{#each tasks.filtered as task (task.id)}
+						<li>
+							<TaskCard
+								{task}
+								verbose={showVerbose}
+								ondone={() => setStatus(task.id, 'done')}
+								ondelete={() => deleteTask(task.id)}
+							/>
+						</li>
+					{/each}
+				</ul>
 		{/if}
 	{/if}
 </div>
