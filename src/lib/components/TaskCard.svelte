@@ -98,7 +98,7 @@
 				<!-- Meta-Zeile -->
 					<div class="flex flex-wrap items-center gap-1.5 mt-1.5">
 						<!-- Priorität + Pfeile -->
-						<span class="text-xs border px-2 py-0.5 rounded {PRIORITY_COLORS[task.priority]}">
+						<span class="text-xs border px-2 py-0.5 rounded inline-block text-center w-16 {PRIORITY_COLORS[task.priority]}">
 							{PRIORITY_LABELS[task.priority]}
 						</span>
 						{#if !done}
