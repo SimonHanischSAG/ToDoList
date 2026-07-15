@@ -10,7 +10,8 @@ import { createTask, normalizeTask } from '../model/task.js';
 
 // ── State (Svelte 5 Runes) ─────────────────────────────────────────────────
 let _tasks = $state(/** @type {import('../model/task.js').Task[]} */ ([]));
-let _activeArea = $state('');
+let _activeAreas = $state(/** @type {string[]} */ ([]));
+let _activeTopic = $state('');
 let _searchQuery = $state('');
 let _showDone = $state(false);
 let _loading = $state(false);
@@ -21,11 +22,27 @@ let _error = $state(/** @type {string | null} */ (null));
 export const tasks = {
 	get all() { return _tasks; },
 	get ranked() { return rankTasks(_tasks); },
-	get focus() { return getFocusTasks(_tasks, { area: _activeArea }); },
+	get focus() { return getFocusTasks(_tasks, { area: _activeAreas[0] ?? '' }); },
 	get areas()  { return getAreas(_tasks); },
 	get topics() { return getTopics(_tasks); },
-	get activeArea() { return _activeArea; },
-	set activeArea(v) { _activeArea = v; },
+
+	/** @returns {string[]} */
+	get activeAreas() { return _activeAreas; },
+	/** @param {string[]} v */
+	set activeAreas(v) { _activeAreas = v; },
+
+	/** Einzelne Area togglen (Mehrfachauswahl) */
+	toggleArea(area) {
+		if (_activeAreas.includes(area)) {
+			_activeAreas = _activeAreas.filter(a => a !== area);
+		} else {
+			_activeAreas = [..._activeAreas, area];
+		}
+	},
+
+	get activeTopic() { return _activeTopic; },
+	set activeTopic(v) { _activeTopic = v; },
+
 	get searchQuery() { return _searchQuery; },
 	set searchQuery(v) { _searchQuery = v; },
 	get showDone() { return _showDone; },
@@ -36,13 +53,15 @@ export const tasks = {
 
 	get filtered() {
 		let result = _tasks.filter(t => t.status === 'open');
-		if (_activeArea) result = result.filter(t => t.area === _activeArea);
+		if (_activeAreas.length > 0) result = result.filter(t => _activeAreas.includes(t.area));
+		if (_activeTopic) result = result.filter(t => t.topic === _activeTopic);
 		if (_searchQuery.trim()) {
 			const q = _searchQuery.toLowerCase();
 			result = result.filter(t =>
 				t.title.toLowerCase().includes(q) ||
 				t.description.toLowerCase().includes(q) ||
 				t.area.toLowerCase().includes(q) ||
+				(t.topic ?? '').toLowerCase().includes(q) ||
 				t.tags.some(tag => tag.toLowerCase().includes(q))
 			);
 		}
@@ -51,7 +70,8 @@ export const tasks = {
 
 	get filteredDone() {
 		let result = _tasks.filter(t => t.status === 'done');
-		if (_activeArea) result = result.filter(t => t.area === _activeArea);
+		if (_activeAreas.length > 0) result = result.filter(t => _activeAreas.includes(t.area));
+		if (_activeTopic) result = result.filter(t => t.topic === _activeTopic);
 		if (_searchQuery.trim()) {
 			const q = _searchQuery.toLowerCase();
 			result = result.filter(t =>
@@ -71,6 +91,15 @@ export const tasks = {
 		for (const t of _tasks.filter(t => t.status === 'open')) {
 			const key = t.area || '(kein Bereich)';
 			counts[key] = (counts[key] ?? 0) + 1;
+		}
+		return counts;
+	},
+
+	get countByTopic() {
+		/** @type {Record<string, number>} */
+		const counts = {};
+		for (const t of _tasks.filter(t => t.status === 'open' && t.topic)) {
+			counts[t.topic] = (counts[t.topic] ?? 0) + 1;
 		}
 		return counts;
 	}
@@ -107,7 +136,7 @@ export async function initialSync() {
 
 /** @param {Partial<import('../model/task.js').Task>} data */
 export async function addTask(data) {
-	const task = createTask({ ...data, area: data.area ?? _activeArea });
+	const task = createTask({ ...data, area: data.area ?? (_activeAreas[0] ?? '') });
 	await db.tasks.add(task);
 	_tasks = rankTasks([..._tasks, task]);
 	schedulePush();
