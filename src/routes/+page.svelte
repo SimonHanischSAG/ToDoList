@@ -77,8 +77,8 @@
 				{#if tasks.activeAreas.length > 0}
 					in <strong>{tasks.activeAreas.join(', ')}</strong>
 				{/if}
-				{#if tasks.activeTopic}
-					· Topic: <strong>{tasks.activeTopic}</strong>
+				{#if tasks.activeTopics.length > 0}
+					· Topic: <strong>{tasks.activeTopics.join(', ')}</strong>
 				{/if}
 			</span>
 			<button
@@ -100,7 +100,7 @@
 			<div class="text-center text-ibm-text-muted py-12 text-sm">Loading...</div>
 		{:else if tasks.filtered.length === 0}
 			<div class="text-center text-ibm-text-muted py-12 text-sm">
-				No open tasks{tasks.activeAreas.length > 0 ? ` in "${tasks.activeAreas.join(', ')}"` : ''}{tasks.activeTopic ? ` · Topic: "${tasks.activeTopic}"` : ''}.
+				No open tasks{tasks.activeAreas.length > 0 ? ` in "${tasks.activeAreas.join(', ')}"` : ''}{tasks.activeTopics.length > 0 ? ` · Topic: "${tasks.activeTopics.join(', ')}"` : ''}.
 			</div>
 		{:else}
 			<ul class="space-y-2">
