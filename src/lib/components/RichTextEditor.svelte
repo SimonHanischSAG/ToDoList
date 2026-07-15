@@ -139,6 +139,9 @@
 		pointer-events: none;
 	}
 
+	/* Browser-Outline des contenteditable entfernen */
+	.rich-editor :global(.tiptap) { outline: none; }
+
 	/* Listen-Styling */
 	.rich-editor :global(ul) { list-style: disc; padding-left: 1.25rem; }
 	.rich-editor :global(ol) { list-style: decimal; padding-left: 1.25rem; }
