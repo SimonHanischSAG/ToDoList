@@ -1,9 +1,9 @@
 <!--
-  RichTextEditor â€“ Tiptap-basierter Mini-Editor
-  UnterstÃ¼tzt: Fett, Unterstrichen, AufzÃ¤hlungsliste (â€¢), Nummerierte Liste, EinrÃ¼cken
+  RichTextEditor - Tiptap-basierter Mini-Editor
+  Unterstuetzt: Fett, Unterstrichen, Aufzaehlungsliste, Nummerierte Liste
   Props:
-    value (string) â€“ HTML-Inhalt (bind:value)
-    placeholder (string) â€“ Platzhaltertext
+    value (string) - HTML-Inhalt (bind:value)
+    placeholder (string) - Platzhaltertext
 -->
 <script>
 	import { onMount, onDestroy } from 'svelte';
@@ -19,7 +19,7 @@
 	import History     from '@tiptap/extension-history';
 
 	/** @type {{ value: string, placeholder?: string }} */
-	let { value = $bindable(''), placeholder = 'Weitere Details, Kontext, Linksâ€¦' } = $props();
+	let { value = $bindable(''), placeholder = 'Weitere Details, Kontext, Links...' } = $props();
 
 	/** @type {HTMLDivElement} */
 	let editorEl;
@@ -33,7 +33,7 @@
 			content: value || '',
 			onUpdate: ({ editor }) => {
 				const html = editor.getHTML();
-				// Leerer Editor â†’ leerer String
+				// Leerer Editor -> leerer String
 				value = html === '<p></p>' ? '' : html;
 			}
 		});
@@ -41,7 +41,7 @@
 
 	onDestroy(() => editor?.destroy());
 
-	// Externe value-Ã„nderung (z.B. Reset) in den Editor spiegeln
+	// Externe value-Aenderung (z.B. Reset) in den Editor spiegeln
 	$effect(() => {
 		if (editor && !editor.isDestroyed) {
 			const current = editor.getHTML();
@@ -56,11 +56,7 @@
 		editor?.chain().focus()[command]().run();
 	}
 
-	function isActive(name, attrs = {}) {
-		return editor?.isActive(name, attrs) ?? false;
-	}
-
-	// Reaktive Toolbar-ZustÃ¤nde
+	// Reaktive Toolbar-Zustaende
 	let isBold      = $state(false);
 	let isUnderline = $state(false);
 	let isBullet    = $state(false);
@@ -102,8 +98,8 @@
 			type="button"
 			onclick={() => cmd('toggleBulletList')}
 			class="toolbar-btn {isBullet ? 'active' : ''}"
-			title="AufzÃ¤hlungsliste"
-		>â€¢ Liste</button>
+			title="Aufzaehlungsliste"
+		>&#8226; Liste</button>
 
 		<button
 			type="button"
@@ -123,22 +119,6 @@
 </div>
 
 <style>
-	/* Platzhalter */
-	.rich-editor :global(.tiptap p.is-editor-empty:first-child::before) {
-		content: attr(data-placeholder);
-		color: #9ca3af;
-		pointer-events: none;
-		float: left;
-		height: 0;
-	}
-	/* Placeholder Ã¼ber data-attr am Wrapper */
-	.rich-editor:has(:global(.tiptap > p:only-child:empty))::before {
-		content: attr(data-placeholder);
-		color: #9ca3af;
-		position: absolute;
-		pointer-events: none;
-	}
-
 	/* Browser-Outline des contenteditable entfernen */
 	.rich-editor :global(.tiptap) { outline: none; }
 
