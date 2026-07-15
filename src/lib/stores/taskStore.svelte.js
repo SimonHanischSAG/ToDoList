@@ -11,7 +11,7 @@ import { createTask, normalizeTask } from '../model/task.js';
 // ── State (Svelte 5 Runes) ─────────────────────────────────────────────────
 let _tasks = $state(/** @type {import('../model/task.js').Task[]} */ ([]));
 let _activeAreas = $state(/** @type {string[]} */ ([]));
-let _activeTopic = $state('');
+let _activeTopics = $state(/** @type {string[]} */ ([]));
 let _searchQuery = $state('');
 let _showDone = $state(false);
 let _loading = $state(false);
@@ -39,9 +39,20 @@ export const tasks = {
 			_activeAreas = [..._activeAreas, area];
 		}
 	},
+/** @returns {string[]} */
+get activeTopics() { return _activeTopics; },
+/** @param {string[]} v */
+set activeTopics(v) { _activeTopics = v; },
 
-	get activeTopic() { return _activeTopic; },
-	set activeTopic(v) { _activeTopic = v; },
+/** Einzelnes Topic togglen (Mehrfachauswahl) */
+toggleTopic(topic) {
+	if (_activeTopics.includes(topic)) {
+		_activeTopics = _activeTopics.filter(t => t !== topic);
+	} else {
+		_activeTopics = [..._activeTopics, topic];
+	}
+},
+
 
 	get searchQuery() { return _searchQuery; },
 	set searchQuery(v) { _searchQuery = v; },
@@ -54,7 +65,7 @@ export const tasks = {
 	get filtered() {
 		let result = _tasks.filter(t => t.status === 'open');
 		if (_activeAreas.length > 0) result = result.filter(t => _activeAreas.includes(t.area));
-		if (_activeTopic) result = result.filter(t => t.topic === _activeTopic);
+		if (_activeTopics.length > 0) result = result.filter(t => _activeTopics.includes(t.topic));
 		if (_searchQuery.trim()) {
 			const q = _searchQuery.toLowerCase();
 			result = result.filter(t =>
@@ -71,7 +82,7 @@ export const tasks = {
 	get filteredDone() {
 		let result = _tasks.filter(t => t.status === 'done');
 		if (_activeAreas.length > 0) result = result.filter(t => _activeAreas.includes(t.area));
-		if (_activeTopic) result = result.filter(t => t.topic === _activeTopic);
+		if (_activeTopics.length > 0) result = result.filter(t => _activeTopics.includes(t.topic));
 		if (_searchQuery.trim()) {
 			const q = _searchQuery.toLowerCase();
 			result = result.filter(t =>
