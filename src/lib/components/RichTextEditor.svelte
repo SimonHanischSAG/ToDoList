@@ -1,9 +1,9 @@
 <!--
-  RichTextEditor – Tiptap-basierter Mini-Editor
-  Unterstützt: Fett, Unterstrichen, Aufzählungsliste (•), Nummerierte Liste, Einrücken
+  RichTextEditor â€“ Tiptap-basierter Mini-Editor
+  UnterstÃ¼tzt: Fett, Unterstrichen, AufzÃ¤hlungsliste (â€¢), Nummerierte Liste, EinrÃ¼cken
   Props:
-    value (string) – HTML-Inhalt (bind:value)
-    placeholder (string) – Platzhaltertext
+    value (string) â€“ HTML-Inhalt (bind:value)
+    placeholder (string) â€“ Platzhaltertext
 -->
 <script>
 	import { onMount, onDestroy } from 'svelte';
@@ -19,7 +19,7 @@
 	import History     from '@tiptap/extension-history';
 
 	/** @type {{ value: string, placeholder?: string }} */
-	let { value = $bindable(''), placeholder = 'Weitere Details, Kontext, Links…' } = $props();
+	let { value = $bindable(''), placeholder = 'Weitere Details, Kontext, Linksâ€¦' } = $props();
 
 	/** @type {HTMLDivElement} */
 	let editorEl;
@@ -33,7 +33,7 @@
 			content: value || '',
 			onUpdate: ({ editor }) => {
 				const html = editor.getHTML();
-				// Leerer Editor → leerer String
+				// Leerer Editor â†’ leerer String
 				value = html === '<p></p>' ? '' : html;
 			}
 		});
@@ -41,7 +41,7 @@
 
 	onDestroy(() => editor?.destroy());
 
-	// Externe value-Änderung (z.B. Reset) in den Editor spiegeln
+	// Externe value-Ã„nderung (z.B. Reset) in den Editor spiegeln
 	$effect(() => {
 		if (editor && !editor.isDestroyed) {
 			const current = editor.getHTML();
@@ -60,7 +60,7 @@
 		return editor?.isActive(name, attrs) ?? false;
 	}
 
-	// Reaktive Toolbar-Zustände
+	// Reaktive Toolbar-ZustÃ¤nde
 	let isBold      = $state(false);
 	let isUnderline = $state(false);
 	let isBullet    = $state(false);
@@ -79,9 +79,9 @@
 	}
 </script>
 
-<div class="border border-ibm-gray-dark rounded-md overflow-hidden focus-within:ring-2 focus-within:ring-ibm-blue">
+<div class="border border-gray-200 rounded-md overflow-hidden focus-within:ring-2 focus-within:ring-ibm-blue">
 	<!-- Toolbar -->
-	<div class="flex items-center gap-0.5 px-2 py-1 border-b border-ibm-gray-dark bg-gray-50">
+	<div class="flex items-center gap-0.5 px-2 py-1 border-b border-gray-200 bg-gray-50">
 		<button
 			type="button"
 			onclick={() => cmd('toggleBold')}
@@ -96,14 +96,14 @@
 			title="Unterstrichen (Strg+U)"
 		>U</button>
 
-		<div class="w-px h-4 bg-ibm-gray-dark mx-1"></div>
+		<div class="w-px h-4 bg-gray-200 mx-1"></div>
 
 		<button
 			type="button"
 			onclick={() => cmd('toggleBulletList')}
 			class="toolbar-btn {isBullet ? 'active' : ''}"
-			title="Aufzählungsliste"
-		>• Liste</button>
+			title="AufzÃ¤hlungsliste"
+		>â€¢ Liste</button>
 
 		<button
 			type="button"
@@ -131,7 +131,7 @@
 		float: left;
 		height: 0;
 	}
-	/* Placeholder über data-attr am Wrapper */
+	/* Placeholder Ã¼ber data-attr am Wrapper */
 	.rich-editor:has(:global(.tiptap > p:only-child:empty))::before {
 		content: attr(data-placeholder);
 		color: #9ca3af;
