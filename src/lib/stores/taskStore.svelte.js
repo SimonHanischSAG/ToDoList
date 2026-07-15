@@ -12,6 +12,7 @@ import { createTask, normalizeTask } from '../model/task.js';
 let _tasks = $state(/** @type {import('../model/task.js').Task[]} */ ([]));
 let _activeArea = $state('');
 let _searchQuery = $state('');
+let _showDone = $state(false);
 let _loading = $state(false);
 let _syncing = $state(false);
 let _error = $state(/** @type {string | null} */ (null));
@@ -27,6 +28,8 @@ export const tasks = {
 	set activeArea(v) { _activeArea = v; },
 	get searchQuery() { return _searchQuery; },
 	set searchQuery(v) { _searchQuery = v; },
+	get showDone() { return _showDone; },
+	set showDone(v) { _showDone = v; },
 	get loading() { return _loading; },
 	get syncing() { return _syncing; },
 	get error() { return _error; },
@@ -44,6 +47,20 @@ export const tasks = {
 			);
 		}
 		return rankTasks(result);
+	},
+
+	get filteredDone() {
+		let result = _tasks.filter(t => t.status === 'done');
+		if (_activeArea) result = result.filter(t => t.area === _activeArea);
+		if (_searchQuery.trim()) {
+			const q = _searchQuery.toLowerCase();
+			result = result.filter(t =>
+				t.title.toLowerCase().includes(q) ||
+				t.description.toLowerCase().includes(q) ||
+				t.area.toLowerCase().includes(q)
+			);
+		}
+		return result.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 	},
 
 	get countByArea() {

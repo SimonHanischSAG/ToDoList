@@ -71,12 +71,26 @@
 		</div>
 
 		<!-- Statistik-Zeile -->
-		<div class="text-xs text-ibm-text-muted mb-3">
-			{tasks.filtered.length} offene Tasks
-			{#if tasks.activeArea} in <strong>{tasks.activeArea}</strong>{/if}
+		<div class="text-xs text-ibm-text-muted mb-3 flex items-center justify-between">
+			<span>
+				{tasks.filtered.length} offene Tasks
+				{#if tasks.activeArea} in <strong>{tasks.activeArea}</strong>{/if}
+			</span>
+			<button
+				onclick={() => tasks.showDone = !tasks.showDone}
+				class="text-xs px-2 py-0.5 rounded border transition-colors
+					{tasks.showDone
+						? 'bg-green-50 border-green-300 text-green-700'
+						: 'border-ibm-gray-dark text-ibm-text-muted hover:border-ibm-blue hover:text-ibm-blue'}"
+			>
+				{tasks.showDone ? '✓ Erledigt ausblenden' : '✓ Erledigt anzeigen'}
+				{#if tasks.filteredDone.length > 0}
+					<span class="ml-1 font-semibold">({tasks.filteredDone.length})</span>
+				{/if}
+			</button>
 		</div>
 
-		<!-- Task-Liste -->
+		<!-- Offene Tasks -->
 		{#if tasks.loading}
 			<div class="text-center text-ibm-text-muted py-12 text-sm">Lädt…</div>
 		{:else if tasks.filtered.length === 0}
@@ -85,17 +99,39 @@
 			</div>
 		{:else}
 			<ul class="space-y-2">
-					{#each tasks.filtered as task (task.id)}
+				{#each tasks.filtered as task (task.id)}
+					<li>
+						<TaskCard
+							{task}
+							verbose={showVerbose}
+							ondone={() => setStatus(task.id, 'done')}
+							ondelete={() => deleteTask(task.id)}
+						/>
+					</li>
+				{/each}
+			</ul>
+		{/if}
+
+		<!-- Erledigte Tasks -->
+		{#if tasks.showDone && tasks.filteredDone.length > 0}
+			<div class="mt-6">
+				<h3 class="text-xs font-semibold text-ibm-text-muted uppercase tracking-wide mb-2">
+					Erledigt ({tasks.filteredDone.length})
+				</h3>
+				<ul class="space-y-2">
+					{#each tasks.filteredDone as task (task.id)}
 						<li>
 							<TaskCard
 								{task}
+								done
 								verbose={showVerbose}
-								ondone={() => setStatus(task.id, 'done')}
+								ondone={() => setStatus(task.id, 'open')}
 								ondelete={() => deleteTask(task.id)}
 							/>
 						</li>
 					{/each}
 				</ul>
+			</div>
 		{/if}
 	{/if}
 </div>

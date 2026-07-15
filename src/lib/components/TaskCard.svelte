@@ -5,8 +5,8 @@
 <script>
 	import TaskForm from './TaskForm.svelte';
 
-	/** @type {{ task: import('$lib/model/task.js').Task, verbose?: boolean, ondone: () => void, ondelete: () => void }} */
-	let { task, verbose = false, ondone, ondelete } = $props();
+	/** @type {{ task: import('$lib/model/task.js').Task, verbose?: boolean, done?: boolean, ondone: () => void, ondelete: () => void }} */
+	let { task, verbose = false, done = false, ondone, ondelete } = $props();
 
 	const PRIORITY_COLORS = {
 		urgent: 'bg-red-100 text-red-800 border-red-200',
@@ -48,29 +48,35 @@
 	<TaskForm task={task} onclose={() => editing = false} />
 {/if}
 
-<div class="bg-white border border-ibm-gray-dark rounded-md overflow-hidden hover:shadow-sm transition-shadow">
+<div class="border border-ibm-gray-dark rounded-md overflow-hidden hover:shadow-sm transition-shadow {done ? 'bg-gray-50 opacity-70' : 'bg-white'}">
 	<!-- Score-Balken oben -->
-	<div class="h-1 {scoreColor(task.score)}" style="width: {task.score}%"></div>
+	<div class="h-1 {done ? 'bg-gray-200' : scoreColor(task.score)}" style="width: {done ? '100' : task.score}%"></div>
 
 	<div class="p-3">
 		<div class="flex items-start gap-3">
-			<!-- Done-Checkbox -->
+			<!-- Done-Checkbox / Rueckgaengig-Button -->
 			<button
 				onclick={ondone}
-				class="mt-0.5 w-5 h-5 rounded border-2 border-ibm-gray-dark flex-shrink-0 hover:border-ibm-blue hover:bg-ibm-gray transition-colors"
-				title="Als erledigt markieren"
-				aria-label="Erledigt"
-			></button>
+				class="mt-0.5 w-5 h-5 rounded border-2 flex-shrink-0 transition-colors
+					{done
+						? 'border-green-400 bg-green-400 hover:bg-green-300 hover:border-green-300'
+						: 'border-ibm-gray-dark hover:border-ibm-blue hover:bg-ibm-gray'}"
+				title={done ? 'Als offen markieren' : 'Als erledigt markieren'}
+				aria-label={done ? 'Wiederoeffnen' : 'Erledigt'}
+			>
+				{#if done}<span class="text-white text-xs leading-none flex items-center justify-center h-full">✓</span>{/if}
+			</button>
 
 			<!-- Hauptinhalt -->
 			<div class="flex-1 min-w-0">
-				<!-- Titel: Klick → Edit -->
+				<!-- Titel: Klick → Edit (im done-Modus kein Edit) -->
 				<button
-					onclick={() => editing = true}
-					class="text-left w-full group"
-					title="Task bearbeiten"
+					onclick={() => { if (!done) editing = true; }}
+					class="text-left w-full {done ? 'cursor-default' : 'group'}"
+					title={done ? '' : 'Task bearbeiten'}
 				>
-					<span class="text-sm font-medium text-ibm-text leading-snug block group-hover:text-ibm-blue transition-colors">
+					<span class="text-sm font-medium leading-snug block transition-colors
+						{done ? 'line-through text-ibm-text-muted' : 'text-ibm-text group-hover:text-ibm-blue'}">
 						{task.title || '(kein Titel)'}
 					</span>
 				</button>
