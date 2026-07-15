@@ -16,7 +16,7 @@
 		low:    'bg-gray-100 text-gray-600 border-gray-200'
 	};
 
-	const PRIORITY_LABELS = { urgent: 'Kritisch', high: 'Hoch', normal: 'Normal', low: 'Niedrig' };
+	const PRIORITY_LABELS = { urgent: 'Critical', high: 'High', normal: 'Normal', low: 'Low' };
 
 	/** Reihenfolge: urgent > high > normal > low */
 	const PRIORITY_ORDER = ['urgent', 'high', 'normal', 'low'];
@@ -41,10 +41,10 @@
 	function deadlineText(dueDate) {
 		if (!dueDate) return null;
 		const days = Math.round((new Date(dueDate) - new Date()) / 86400000);
-		if (days < 0) return `${Math.abs(days)} Tage überfällig`;
-		if (days === 0) return 'Heute fällig';
-		if (days === 1) return 'Morgen fällig';
-		return `In ${days} Tagen fällig`;
+		if (days < 0) return `${Math.abs(days)} day${Math.abs(days) === 1 ? '' : 's'} overdue`;
+		if (days === 0) return 'Due today';
+		if (days === 1) return 'Due tomorrow';
+		return `Due in ${days} days`;
 	}
 
 	let _expanded = $state(false);
@@ -75,8 +75,8 @@
 					{done
 						? 'border-green-400 bg-green-400 hover:bg-green-300 hover:border-green-300'
 						: 'border-ibm-gray-dark hover:border-ibm-blue hover:bg-ibm-gray'}"
-				title={done ? 'Als offen markieren' : 'Als erledigt markieren'}
-				aria-label={done ? 'Wiederoeffnen' : 'Erledigt'}
+				title={done ? 'Mark as open' : 'Mark as done'}
+					aria-label={done ? 'Reopen' : 'Done'}
 			>
 				{#if done}<span class="text-white text-xs leading-none flex items-center justify-center h-full">✓</span>{/if}
 			</button>
@@ -87,11 +87,11 @@
 				<button
 					onclick={() => { if (!done) editing = true; }}
 					class="text-left w-full {done ? 'cursor-default' : 'group'}"
-					title={done ? '' : 'Task bearbeiten'}
+					title={done ? '' : 'Edit task'}
 				>
 					<span class="text-sm font-medium leading-snug block transition-colors
 						{done ? 'line-through text-ibm-text-muted' : 'text-ibm-text group-hover:text-ibm-blue'}">
-						{task.title || '(kein Titel)'}
+						{task.title || '(no title)'}
 					</span>
 				</button>
 
@@ -107,13 +107,13 @@
 									onclick={raisePriority}
 									disabled={task.priority === 'urgent'}
 									class="text-red-500 hover:text-red-700 disabled:opacity-25 leading-none text-base px-0.5"
-									title="Priorität erhöhen"
+									title="Increase priority"
 								>&#8679;</button>
 								<button
 									onclick={lowerPriority}
 									disabled={task.priority === 'low'}
 									class="text-green-500 hover:text-green-700 disabled:opacity-25 leading-none text-base px-0.5"
-									title="Priorität verringern"
+									title="Decrease priority"
 								>&#8681;</button>
 							</div>
 							<span class="w-2"></span>
@@ -155,7 +155,7 @@
 							</div>
 						{/if}
 						{#if task.blockedBy.length > 0}
-							<p class="text-xs text-red-600">🔒 Blockiert durch {task.blockedBy.length} Task(s)</p>
+							<p class="text-xs text-red-600">🔒 Blocked by {task.blockedBy.length} task(s)</p>
 						{/if}
 					</div>
 				{/if}
@@ -167,15 +167,15 @@
 						<button
 							onclick={() => _expanded = !_expanded}
 							class="text-ibm-text-muted hover:text-ibm-text transition-colors p-1 text-xs"
-							title={_expanded ? 'Weniger anzeigen' : 'Details anzeigen'}
+							title={_expanded ? 'Show less' : 'Show details'}
 							aria-label="Details"
 						>{_expanded ? '▲' : '▼'}</button>
 					{/if}
 				<button
 					onclick={ondelete}
 					class="text-ibm-gray-dark hover:text-red-500 transition-colors p-1"
-					title="Task löschen"
-					aria-label="Löschen"
+					title="Delete task"
+						aria-label="Delete"
 				>✕</button>
 			</div>
 		</div>

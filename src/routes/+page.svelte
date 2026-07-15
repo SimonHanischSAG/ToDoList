@@ -18,7 +18,7 @@
 	<!-- Sync-Indicator -->
 	{#if tasks.syncing}
 		<div class="bg-blue-50 border border-blue-200 text-blue-800 text-xs px-3 py-2 rounded mb-3">
-			⟳ Synchronisiere mit OneDrive…
+			⟳ Syncing with OneDrive...
 		</div>
 	{/if}
 
@@ -34,7 +34,7 @@
 			onclick={() => { showFocus = !showFocus; if (showFocus) showVerbose = false; }}
 			class="flex-1 bg-ibm-blue text-white text-sm font-semibold py-2 px-3 rounded-md hover:bg-ibm-blue-dark transition-colors"
 		>
-			{showFocus ? '← Alle Tasks' : '⭐ Focus'}
+			{showFocus ? '← All tasks' : '⭐ Focus'}
 		</button>
 		<button
 			onclick={() => { showVerbose = !showVerbose; if (showVerbose) showFocus = false; }}
@@ -43,13 +43,13 @@
 					? 'bg-ibm-blue text-white border-ibm-blue hover:bg-ibm-blue-dark'
 					: 'bg-white border-ibm-gray-dark text-ibm-text hover:bg-ibm-gray'}"
 		>
-			{showVerbose ? '← Kompakt' : '☰ Verbose'}
+			{showVerbose ? '← Compact' : '☰ Verbose'}
 		</button>
 		<button
 			onclick={() => showForm = true}
 			class="bg-white border border-ibm-gray-dark text-ibm-text text-sm font-semibold py-2 px-4 rounded-md hover:bg-ibm-gray transition-colors"
 		>
-			+ Neu
+			+ New
 		</button>
 	</div>
 
@@ -62,7 +62,7 @@
 			<!-- Suche -->
 			<input
 				type="search"
-				placeholder="Tasks durchsuchen…"
+				placeholder="Search tasks..."
 				bind:value={tasks.searchQuery}
 				class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
 			/>
@@ -73,7 +73,7 @@
 		<!-- Statistik-Zeile -->
 		<div class="text-xs text-ibm-text-muted mb-3 flex items-center justify-between">
 			<span>
-				{tasks.filtered.length} offene Tasks
+				{tasks.filtered.length} open task{tasks.filtered.length === 1 ? '' : 's'}
 				{#if tasks.activeArea} in <strong>{tasks.activeArea}</strong>{/if}
 			</span>
 			<button
@@ -83,19 +83,19 @@
 						? 'bg-green-50 border-green-300 text-green-700'
 						: 'border-ibm-gray-dark text-ibm-text-muted hover:border-ibm-blue hover:text-ibm-blue'}"
 			>
-				{tasks.showDone ? '✓ Erledigt ausblenden' : '✓ Erledigt anzeigen'}
+				{tasks.showDone ? '✓ Hide completed' : '✓ Show completed'}
 				{#if tasks.filteredDone.length > 0}
 					<span class="ml-1 font-semibold">({tasks.filteredDone.length})</span>
 				{/if}
 			</button>
 		</div>
 
-		<!-- Offene Tasks -->
+		<!-- Open tasks -->
 		{#if tasks.loading}
-			<div class="text-center text-ibm-text-muted py-12 text-sm">Lädt…</div>
+			<div class="text-center text-ibm-text-muted py-12 text-sm">Loading...</div>
 		{:else if tasks.filtered.length === 0}
 			<div class="text-center text-ibm-text-muted py-12 text-sm">
-				Keine offenen Tasks {tasks.activeArea ? `in "${tasks.activeArea}"` : ''}.
+				No open tasks {tasks.activeArea ? `in "${tasks.activeArea}"` : ''}.
 			</div>
 		{:else}
 			<ul class="space-y-2">
@@ -116,8 +116,8 @@
 		{#if tasks.showDone && tasks.filteredDone.length > 0}
 			<div class="mt-6">
 				<h3 class="text-xs font-semibold text-ibm-text-muted uppercase tracking-wide mb-2">
-					Erledigt ({tasks.filteredDone.length})
-				</h3>
+						Completed ({tasks.filteredDone.length})
+					</h3>
 				<ul class="space-y-2">
 					{#each tasks.filteredDone as task (task.id)}
 						<li>

@@ -15,7 +15,7 @@
 		         ? 'bg-ibm-blue text-white border-ibm-blue'
 		         : 'bg-white text-ibm-text-muted border-ibm-gray-dark hover:border-ibm-blue hover:text-ibm-blue'}"
 	>
-		Alle
+		All
 		<span class="ml-1 opacity-70">
 			{Object.values(tasks.countByArea).reduce((a, b) => a + b, 0)}
 		</span>

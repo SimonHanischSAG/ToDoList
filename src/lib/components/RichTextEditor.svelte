@@ -19,7 +19,7 @@
 	import History     from '@tiptap/extension-history';
 
 	/** @type {{ value: string, placeholder?: string }} */
-	let { value = $bindable(''), placeholder = 'Weitere Details, Kontext, Links...' } = $props();
+	let { value = $bindable(''), placeholder = 'Additional details, context, links...' } = $props();
 
 	/** @type {HTMLDivElement} */
 	let editorEl;

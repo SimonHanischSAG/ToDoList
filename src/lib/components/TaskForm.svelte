@@ -34,32 +34,31 @@
 
 	const quickDates = [
 		{
-			label: 'Heute',
+			label: 'Today',
 			fn: () => toDateStr(new Date())
 		},
 		{
-			label: 'Diese Woche',
+			label: 'This week',
 			fn: () => {
 				const d = new Date();
-				// Auf Sonntag (Ende der Woche) auffüllen
-				const day = d.getDay(); // 0 = So, 1 = Mo, …
+				const day = d.getDay(); // 0 = Sun
 				const diff = day === 0 ? 0 : 7 - day;
 				d.setDate(d.getDate() + diff);
 				return toDateStr(d);
 			}
 		},
 		{
-			label: 'Dieser Monat',
+			label: 'This month',
 			fn: () => {
 				const d = new Date();
 				return toDateStr(new Date(d.getFullYear(), d.getMonth() + 1, 0));
 			}
 		},
 		{
-			label: 'Dieses Quartal',
+			label: 'This quarter',
 			fn: () => {
 				const d = new Date();
-				const quarterEndMonth = Math.floor(d.getMonth() / 3) * 3 + 3; // 3, 6, 9 oder 12
+				const quarterEndMonth = Math.floor(d.getMonth() / 3) * 3 + 3;
 				return toDateStr(new Date(d.getFullYear(), quarterEndMonth, 0));
 			}
 		}
@@ -99,25 +98,25 @@
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
 <dialog
 	class="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-4 m-0 w-full h-full max-w-none max-h-none border-0"
-	aria-label={isEdit ? 'Task bearbeiten' : 'Neuer Task'}
+	aria-label={isEdit ? 'Edit task' : 'New task'}
 	onclick={(e) => e.target === e.currentTarget && onclose()}
 	open
 >
 	<div class="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-2xl p-8 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
 		<div class="flex items-center justify-between">
-			<h2 class="font-bold text-ibm-text">{isEdit ? 'Task bearbeiten' : 'Neuer Task'}</h2>
-			<button onclick={onclose} class="text-ibm-text-muted hover:text-ibm-text" aria-label="Schließen">✕</button>
+			<h2 class="font-bold text-ibm-text">{isEdit ? 'Edit task' : 'New task'}</h2>
+				<button onclick={onclose} class="text-ibm-text-muted hover:text-ibm-text" aria-label="Close">✕</button>
 		</div>
 
 		<form onsubmit={handleSubmit} class="space-y-3">
 			<!-- Titel -->
 			<div>
-				<label class="block text-xs font-semibold text-ibm-text-muted mb-1" for="task-title">Titel *</label>
-				<input
-					id="task-title"
-					type="text"
-					bind:value={title}
-					placeholder="Was muss getan werden?"
+				<label class="block text-xs font-semibold text-ibm-text-muted mb-1" for="task-title">Title *</label>
+					<input
+						id="task-title"
+						type="text"
+						bind:value={title}
+						placeholder="What needs to be done?"
 					required
 					class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
 				/>
@@ -129,23 +128,23 @@
 				<RichTextEditor bind:value={description} />
 			</div>
 
-			<!-- Priorität + Umfeld (2 Spalten) -->
-			<div class="grid grid-cols-2 gap-3">
-				<div>
-					<label class="block text-xs font-semibold text-ibm-text-muted mb-1" for="task-prio">Priorität</label>
-					<select
-						id="task-prio"
-						bind:value={priority}
-						class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue bg-white"
-					>
-						<option value="urgent">🔴 Kritisch</option>
-						<option value="high">🟠 Hoch</option>
-						<option value="normal">🔵 Normal</option>
-						<option value="low">⚪ Niedrig</option>
-					</select>
-				</div>
-				<div>
-					<label class="block text-xs font-semibold text-ibm-text-muted mb-1" for="task-area">Umfeld</label>
+			<!-- Priority + Area (2 columns) -->
+				<div class="grid grid-cols-2 gap-3">
+					<div>
+						<label class="block text-xs font-semibold text-ibm-text-muted mb-1" for="task-prio">Priority</label>
+						<select
+							id="task-prio"
+							bind:value={priority}
+							class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue bg-white"
+						>
+							<option value="urgent">🔴 Critical</option>
+							<option value="high">🟠 High</option>
+							<option value="normal">🔵 Normal</option>
+							<option value="low">⚪ Low</option>
+						</select>
+					</div>
+					<div>
+						<label class="block text-xs font-semibold text-ibm-text-muted mb-1" for="task-area">Area</label>
 					<input
 						id="task-area"
 						type="text"
@@ -159,10 +158,10 @@
 				</div>
 			</div>
 
-			<!-- Thema + Deadline (2 Spalten) -->
-			<div class="grid grid-cols-2 gap-3">
-				<div>
-					<label class="block text-xs font-semibold text-ibm-text-muted mb-1" for="task-topic">Thema</label>
+			<!-- Topic + Deadline (2 columns) -->
+				<div class="grid grid-cols-2 gap-3">
+					<div>
+						<label class="block text-xs font-semibold text-ibm-text-muted mb-1" for="task-topic">Topic</label>
 					<input
 						id="task-topic"
 						type="text"
@@ -175,7 +174,7 @@
 					</datalist>
 				</div>
 				<div>
-					<label class="block text-xs font-semibold text-ibm-text-muted mb-1" for="task-due">Deadline</label>
+					<label class="block text-xs font-semibold text-ibm-text-muted mb-1" for="task-due">Due date</label>
 					<input
 						id="task-due"
 						type="date"
@@ -200,7 +199,7 @@
 				disabled={saving || !title.trim()}
 				class="w-full bg-ibm-blue hover:bg-ibm-blue-dark disabled:opacity-50 text-white font-semibold py-2.5 rounded-md text-sm transition-colors"
 			>
-				{saving ? 'Wird gespeichert…' : isEdit ? 'Änderungen speichern' : 'Task speichern'}
+				{saving ? 'Saving...' : isEdit ? 'Save changes' : 'Save task'}
 			</button>
 		</form>
 	</div>

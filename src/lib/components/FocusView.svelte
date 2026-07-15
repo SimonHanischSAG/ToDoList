@@ -10,16 +10,16 @@
 
 <div class="space-y-3">
 	<div class="bg-ibm-blue text-white rounded-lg p-4">
-		<h2 class="font-bold text-base">⭐ Dein Focus für heute</h2>
-		<p class="text-blue-100 text-xs mt-1">
-			Die {tasks.focus.length} wichtigsten Tasks nach Score
-			{#if tasks.activeArea}in <strong>{tasks.activeArea}</strong>{/if}
-		</p>
+		<h2 class="font-bold text-base">⭐ Your focus for today</h2>
+			<p class="text-blue-100 text-xs mt-1">
+				Top {tasks.focus.length} tasks by score
+				{#if tasks.activeArea}in <strong>{tasks.activeArea}</strong>{/if}
+			</p>
 	</div>
 
 	{#if tasks.focus.length === 0}
 		<div class="text-center text-ibm-text-muted py-8 text-sm">
-			🎉 Alle Tasks erledigt oder blockiert!
+			🎉 All tasks done or blocked!
 		</div>
 	{:else}
 		<ol class="space-y-2">
@@ -33,7 +33,7 @@
 					<!-- Inhalt -->
 					<div class="flex-1 min-w-0">
 						<div class="text-sm font-semibold text-ibm-text">
-							{PRIORITY_EMOJI[task.priority]} {task.title || '(kein Titel)'}
+							{PRIORITY_EMOJI[task.priority]} {task.title || '(no title)'}
 						</div>
 						<div class="flex gap-2 mt-1 text-xs text-ibm-text-muted">
 							{#if task.area}<span>{task.area}</span>{/if}
@@ -46,7 +46,7 @@
 						onclick={() => setStatus(task.id, 'done')}
 						class="flex-shrink-0 text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-1 rounded hover:bg-green-100 transition-colors"
 					>
-						✓ Erledigt
+						✓ Done
 					</button>
 				</li>
 			{/each}
