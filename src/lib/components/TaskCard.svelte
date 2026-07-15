@@ -4,6 +4,7 @@
 -->
 <script>
 	import TaskForm from './TaskForm.svelte';
+	import { updateTask } from '$lib/stores/taskStore.svelte.js';
 
 	/** @type {{ task: import('$lib/model/task.js').Task, verbose?: boolean, done?: boolean, ondone: () => void, ondelete: () => void }} */
 	let { task, verbose = false, done = false, ondone, ondelete } = $props();
@@ -16,6 +17,19 @@
 	};
 
 	const PRIORITY_LABELS = { urgent: 'Kritisch', high: 'Hoch', normal: 'Normal', low: 'Niedrig' };
+
+	/** Reihenfolge: urgent > high > normal > low */
+	const PRIORITY_ORDER = ['urgent', 'high', 'normal', 'low'];
+
+	function raisePriority() {
+		const idx = PRIORITY_ORDER.indexOf(task.priority);
+		if (idx > 0) updateTask(task.id, { priority: PRIORITY_ORDER[idx - 1] });
+	}
+
+	function lowerPriority() {
+		const idx = PRIORITY_ORDER.indexOf(task.priority);
+		if (idx < PRIORITY_ORDER.length - 1) updateTask(task.id, { priority: PRIORITY_ORDER[idx + 1] });
+	}
 
 	function scoreColor(score) {
 		if (score >= 75) return 'bg-red-500';
@@ -82,23 +96,42 @@
 				</button>
 
 				<!-- Meta-Zeile -->
-				<div class="flex flex-wrap items-center gap-1.5 mt-1.5">
-					{#if task.area}
-						<span class="text-xs bg-ibm-gray text-ibm-text-muted px-2 py-0.5 rounded">{task.area}</span>
-					{/if}
-					<span class="text-xs border px-2 py-0.5 rounded {PRIORITY_COLORS[task.priority]}">
-						{PRIORITY_LABELS[task.priority]}
-					</span>
-					{#if task.topic}
-						<span class="text-xs bg-gray-200 text-ibm-text-muted px-2 py-0.5 rounded">{task.topic}</span>
-					{/if}
-					{#if deadline}
-						<span class="text-xs {isOverdue ? 'text-red-600 font-semibold' : 'text-orange-600'}">
-							⏰ {deadline}
+					<div class="flex flex-wrap items-center gap-1.5 mt-1.5">
+						<!-- Priorität + Pfeile -->
+						<span class="text-xs border px-2 py-0.5 rounded {PRIORITY_COLORS[task.priority]}">
+							{PRIORITY_LABELS[task.priority]}
 						</span>
-					{/if}
-					<span class="text-xs text-ibm-text-muted ml-auto">Score: {task.score}</span>
-				</div>
+						{#if !done}
+							<div class="flex flex-col gap-0 -my-0.5">
+								<button
+									onclick={raisePriority}
+									disabled={task.priority === 'urgent'}
+									class="text-ibm-text-muted hover:text-ibm-blue disabled:opacity-25 leading-none text-[10px] px-0.5"
+									title="Priorität erhöhen"
+								>▲</button>
+								<button
+									onclick={lowerPriority}
+									disabled={task.priority === 'low'}
+									class="text-ibm-text-muted hover:text-ibm-blue disabled:opacity-25 leading-none text-[10px] px-0.5"
+									title="Priorität verringern"
+								>▼</button>
+							</div>
+							<span class="w-2"></span>
+						{/if}
+						<!-- Umfeld + Thema -->
+						{#if task.area}
+							<span class="text-xs bg-ibm-gray text-ibm-text-muted px-2 py-0.5 rounded">{task.area}</span>
+						{/if}
+						{#if task.topic}
+							<span class="text-xs bg-gray-200 text-ibm-text-muted px-2 py-0.5 rounded">{task.topic}</span>
+						{/if}
+						{#if deadline}
+							<span class="text-xs {isOverdue ? 'text-red-600 font-semibold' : 'text-orange-600'}">
+								⏰ {deadline}
+							</span>
+						{/if}
+						<span class="text-xs text-ibm-text-muted ml-auto">Score: {task.score}</span>
+					</div>
 
 				<!-- Expanded: Beschreibung + Tags + Blockiert-durch -->
 				{#if expanded && (task.description || task.tags.length > 0 || task.blockedBy.length > 0 || task.dueDate)}
