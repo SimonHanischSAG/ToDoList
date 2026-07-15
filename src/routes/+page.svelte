@@ -74,7 +74,12 @@
 		<div class="text-xs text-ibm-text-muted mb-3 flex items-center justify-between">
 			<span>
 				{tasks.filtered.length} open task{tasks.filtered.length === 1 ? '' : 's'}
-				{#if tasks.activeArea} in <strong>{tasks.activeArea}</strong>{/if}
+				{#if tasks.activeAreas.length > 0}
+					in <strong>{tasks.activeAreas.join(', ')}</strong>
+				{/if}
+				{#if tasks.activeTopic}
+					· Topic: <strong>{tasks.activeTopic}</strong>
+				{/if}
 			</span>
 			<button
 				onclick={() => tasks.showDone = !tasks.showDone}
@@ -95,7 +100,7 @@
 			<div class="text-center text-ibm-text-muted py-12 text-sm">Loading...</div>
 		{:else if tasks.filtered.length === 0}
 			<div class="text-center text-ibm-text-muted py-12 text-sm">
-				No open tasks {tasks.activeArea ? `in "${tasks.activeArea}"` : ''}.
+				No open tasks{tasks.activeAreas.length > 0 ? ` in "${tasks.activeAreas.join(', ')}"` : ''}{tasks.activeTopic ? ` · Topic: "${tasks.activeTopic}"` : ''}.
 			</div>
 		{:else}
 			<ul class="space-y-2">
