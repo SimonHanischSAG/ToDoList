@@ -83,17 +83,17 @@
 
 			<!-- Hauptinhalt -->
 			<div class="flex-1 min-w-0">
-				<!-- Titel: Klick → Edit (im done-Modus kein Edit) -->
-				<button
-					onclick={() => { if (!done) editing = true; }}
-					class="text-left w-full {done ? 'cursor-default' : 'group'}"
-					title={done ? '' : 'Edit task'}
-				>
-					<span class="text-sm font-medium leading-snug block transition-colors
-						{done ? 'line-through text-ibm-text-muted' : 'text-ibm-text group-hover:text-ibm-blue'}">
-						{task.title || '(no title)'}
-					</span>
-				</button>
+				<!-- Titel: Klick → Edit -->
+					<button
+						onclick={() => editing = true}
+						class="text-left w-full group"
+						title="Edit task"
+					>
+						<span class="text-sm font-medium leading-snug block transition-colors
+							{done ? 'line-through text-ibm-text-muted group-hover:text-ibm-blue' : 'text-ibm-text group-hover:text-ibm-blue'}">
+							{task.title || '(no title)'}
+						</span>
+					</button>
 
 				<!-- Meta-Zeile -->
 					<div class="flex flex-wrap items-center gap-1.5 mt-1.5">

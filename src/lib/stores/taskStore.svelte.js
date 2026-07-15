@@ -57,10 +57,12 @@ export const tasks = {
 			result = result.filter(t =>
 				t.title.toLowerCase().includes(q) ||
 				t.description.toLowerCase().includes(q) ||
-				t.area.toLowerCase().includes(q)
+				t.area.toLowerCase().includes(q) ||
+				(t.topic ?? '').toLowerCase().includes(q) ||
+				t.tags.some(tag => tag.toLowerCase().includes(q))
 			);
 		}
-		return result.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+		return rankTasks(result);
 	},
 
 	get countByArea() {
