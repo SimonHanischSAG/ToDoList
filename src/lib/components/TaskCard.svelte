@@ -102,19 +102,19 @@
 							{PRIORITY_LABELS[task.priority]}
 						</span>
 						{#if !done}
-							<div class="flex flex-col gap-0 -my-0.5">
+							<div class="flex flex-row gap-0.5">
 								<button
 									onclick={raisePriority}
 									disabled={task.priority === 'urgent'}
-									class="text-ibm-text-muted hover:text-ibm-blue disabled:opacity-25 leading-none text-[10px] px-0.5"
+									class="text-red-500 hover:text-red-700 disabled:opacity-25 leading-none text-base px-0.5"
 									title="Priorität erhöhen"
-								>▲</button>
+								>&#8679;</button>
 								<button
 									onclick={lowerPriority}
 									disabled={task.priority === 'low'}
-									class="text-ibm-text-muted hover:text-ibm-blue disabled:opacity-25 leading-none text-[10px] px-0.5"
+									class="text-green-500 hover:text-green-700 disabled:opacity-25 leading-none text-base px-0.5"
 									title="Priorität verringern"
-								>▼</button>
+								>&#8681;</button>
 							</div>
 							<span class="w-2"></span>
 						{/if}
