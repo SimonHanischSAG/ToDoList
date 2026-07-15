@@ -62,7 +62,11 @@
 	<TaskForm task={task} onclose={() => editing = false} />
 {/if}
 
-<div class="border border-ibm-gray-dark rounded-md overflow-hidden hover:shadow-sm transition-shadow {done ? 'bg-gray-50 opacity-70' : 'bg-white'}">
+<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+<div
+	class="border border-ibm-gray-dark rounded-md overflow-hidden hover:shadow-sm transition-shadow cursor-pointer {done ? 'bg-gray-50 opacity-70' : 'bg-white'}"
+	onclick={() => editing = true}
+>
 	<!-- Score-Balken oben -->
 	<div class="h-1 {done ? 'bg-gray-200' : scoreColor(task.score)}" style="width: {done ? '100' : task.score}%"></div>
 
@@ -70,7 +74,7 @@
 		<div class="flex items-start gap-3">
 			<!-- Done-Checkbox / Rueckgaengig-Button -->
 			<button
-				onclick={ondone}
+				onclick={(e) => { e.stopPropagation(); ondone(); }}
 				class="mt-0.5 w-5 h-5 rounded border-2 flex-shrink-0 transition-colors
 					{done
 						? 'border-green-400 bg-green-400 hover:bg-green-300 hover:border-green-300'
@@ -83,17 +87,11 @@
 
 			<!-- Hauptinhalt -->
 			<div class="flex-1 min-w-0">
-				<!-- Titel: Klick → Edit -->
-					<button
-						onclick={() => editing = true}
-						class="text-left w-full group"
-						title="Edit task"
-					>
-						<span class="text-sm font-medium leading-snug block transition-colors
-							{done ? 'line-through text-ibm-text-muted group-hover:text-ibm-blue' : 'text-ibm-text group-hover:text-ibm-blue'}">
-							{task.title || '(no title)'}
-						</span>
-					</button>
+				<!-- Titel -->
+					<div class="text-sm font-medium leading-snug block transition-colors
+						{done ? 'line-through text-ibm-text-muted' : 'text-ibm-text'}">
+						{task.title || '(no title)'}
+					</div>
 
 				<!-- Meta-Zeile -->
 					<div class="flex flex-wrap items-center gap-1.5 mt-1.5">
@@ -101,23 +99,21 @@
 						<span class="text-xs border px-2 py-0.5 rounded inline-block text-center w-16 {PRIORITY_COLORS[task.priority]}">
 							{PRIORITY_LABELS[task.priority]}
 						</span>
-						{#if !done}
-							<div class="flex flex-row gap-0.5">
-								<button
-									onclick={raisePriority}
-									disabled={task.priority === 'urgent'}
-									class="text-red-500 hover:text-red-700 disabled:opacity-25 leading-none text-base px-0.5"
-									title="Increase priority"
-								>&#8679;</button>
-								<button
-									onclick={lowerPriority}
-									disabled={task.priority === 'low'}
-									class="text-green-500 hover:text-green-700 disabled:opacity-25 leading-none text-base px-0.5"
-									title="Decrease priority"
-								>&#8681;</button>
-							</div>
-							<span class="w-2"></span>
-						{/if}
+						<div class="flex flex-row gap-0.5">
+							<button
+								onclick={(e) => { e.stopPropagation(); raisePriority(); }}
+								disabled={task.priority === 'urgent'}
+								class="text-red-500 hover:text-red-700 disabled:opacity-25 leading-none text-base px-0.5"
+								title="Increase priority"
+							>&#8679;</button>
+							<button
+								onclick={(e) => { e.stopPropagation(); lowerPriority(); }}
+								disabled={task.priority === 'low'}
+								class="text-green-500 hover:text-green-700 disabled:opacity-25 leading-none text-base px-0.5"
+								title="Decrease priority"
+							>&#8681;</button>
+						</div>
+						<span class="w-2"></span>
 						<!-- Umfeld + Thema -->
 						{#if task.area}
 							<span class="text-xs bg-ibm-gray text-ibm-text-muted px-2 py-0.5 rounded">{task.area}</span>
@@ -165,19 +161,19 @@
 				<div class="flex items-center gap-1 flex-shrink-0">
 					{#if !verbose && (task.description || task.tags.length > 0)}
 						<button
-							onclick={() => _expanded = !_expanded}
+							onclick={(e) => { e.stopPropagation(); _expanded = !_expanded; }}
 							class="text-ibm-text-muted hover:text-ibm-text transition-colors p-1 text-xs"
 							title={_expanded ? 'Show less' : 'Show details'}
 							aria-label="Details"
 						>{_expanded ? '▲' : '▼'}</button>
 					{/if}
-				<button
-					onclick={ondelete}
-					class="text-ibm-gray-dark hover:text-red-500 transition-colors p-1"
-					title="Delete task"
+					<button
+						onclick={(e) => { e.stopPropagation(); ondelete(); }}
+						class="text-ibm-gray-dark hover:text-red-500 transition-colors p-1"
+						title="Delete task"
 						aria-label="Delete"
-				>✕</button>
-			</div>
+					>✕</button>
+				</div>
 		</div>
 	</div>
 </div>
