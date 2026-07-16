@@ -12,7 +12,7 @@
 
 /** @import { Task } from './task.js' */
 
-const PRIO_BASE = { urgent: 80, high: 60, normal: 40, low: 20 };
+const PRIO_BASE = { urgent: 80, high: 60, normal: 40, low: 20, verylow: 5 };
 
 /**
  * Berechnet den Score für einen einzelnen Task.

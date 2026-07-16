@@ -4,7 +4,7 @@
  */
 
 /** @typedef {'open' | 'done' | 'optional' | 'archived'} TaskStatus */
-/** @typedef {'urgent' | 'high' | 'normal' | 'low'} TaskPriority */
+/** @typedef {'urgent' | 'high' | 'normal' | 'low' | 'verylow'} TaskPriority */
 
 /**
 * @typedef {Object} Task

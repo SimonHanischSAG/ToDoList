@@ -10,16 +10,17 @@
 	let { task, verbose = false, done = false, ondone, ondelete } = $props();
 
 	const PRIORITY_COLORS = {
-		urgent: 'bg-red-100 text-red-800 border-red-200',
-		high:   'bg-orange-100 text-orange-800 border-orange-200',
-		normal: 'bg-blue-50 text-blue-800 border-blue-200',
-		low:    'bg-gray-100 text-gray-600 border-gray-200'
+		urgent:  'bg-red-100 text-red-800 border-red-200',
+		high:    'bg-orange-100 text-orange-800 border-orange-200',
+		normal:  'bg-blue-50 text-blue-800 border-blue-200',
+		low:     'bg-gray-100 text-gray-600 border-gray-200',
+		verylow: 'bg-gray-50 text-gray-400 border-gray-100'
 	};
 
-	const PRIORITY_LABELS = { urgent: 'Critical', high: 'High', normal: 'Normal', low: 'Low' };
+	const PRIORITY_LABELS = { urgent: 'Critical', high: 'High', normal: 'Normal', low: 'Low', verylow: 'Very Low' };
 
-	/** Reihenfolge: urgent > high > normal > low */
-	const PRIORITY_ORDER = ['urgent', 'high', 'normal', 'low'];
+	/** Reihenfolge: urgent > high > normal > low > verylow */
+	const PRIORITY_ORDER = ['urgent', 'high', 'normal', 'low', 'verylow'];
 
 	function raisePriority() {
 		const idx = PRIORITY_ORDER.indexOf(task.priority);
@@ -108,7 +109,7 @@
 							>&#8679;</button>
 							<button
 								onclick={(e) => { e.stopPropagation(); lowerPriority(); }}
-								disabled={task.priority === 'low'}
+								disabled={task.priority === 'verylow'}
 								class="text-green-500 hover:text-green-700 disabled:opacity-25 leading-none text-base px-0.5"
 								title="Decrease priority"
 							>&#8681;</button>
