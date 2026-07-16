@@ -8,7 +8,7 @@
 	import { browser } from '$app/environment';
 	import { loadTasks, initialSync, stopSync, tasks } from '$lib/stores/taskStore.svelte.js';
 	import { exportToFile, importFromFile } from '$lib/storage/index.js';
-	import { login, handleRedirect, getToken, getUser, logout as boxLogout } from '$lib/auth/box.js';
+	import { login, handleRedirect, getToken, getUser, logout as boxLogout, startTokenRefreshTimer, refreshToken } from '$lib/auth/box.js';
 	import StoragePrompt from '$lib/components/StoragePrompt.svelte';
 
 	const STORAGE_CHOICE_KEY = 'ibmtodo_storage_choice'; // 'box' | 'local'
@@ -26,11 +26,21 @@
 
 		// OAuth-Redirect verarbeiten (falls gerade nach Box-Login zurückgekehrt)
 		await handleRedirect();
+
+		// Falls kein gültiger Access Token vorhanden, aber ein Refresh Token existiert
+		// → stiller Hintergrund-Refresh (wichtig auf iPhone nach Tab-Schließen)
+		if (!getToken() && localStorage.getItem('box_refresh_token')) {
+			await refreshToken();
+		}
+
 		loggedIn = !!getToken();
 		user = getUser();
 
-		// Nach erfolgreichem Box-Login Wahl merken
-		if (loggedIn) localStorage.setItem(STORAGE_CHOICE_KEY, 'box');
+		// Nach erfolgreichem Box-Login Wahl merken und Token-Refresh-Timer starten
+		if (loggedIn) {
+			localStorage.setItem(STORAGE_CHOICE_KEY, 'box');
+			startTokenRefreshTimer();
+		}
 
 		// Wenn noch keine Wahl getroffen und nicht gerade eingeloggt → Prompt zeigen
 		const choice = localStorage.getItem(STORAGE_CHOICE_KEY);

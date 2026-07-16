@@ -5,7 +5,7 @@
 
 import { db } from '../storage/db.js';
 import { schedulePush, syncFromStorage, retryFailedSyncs, startPolling, stopPolling, loadPrefs, schedulePrefs } from '../storage/index.js';
-import { getToken } from '../auth/box.js';
+import { getToken, login as boxLogin } from '../auth/box.js';
 import { rankTasks, getFocusTasks, getAreas, getTopics } from '../engine/priority.js';
 import { createTask, normalizeTask } from '../model/task.js';
 
@@ -19,6 +19,7 @@ let _showDone = $state(false);
 let _loading = $state(false);
 let _syncing = $state(false);
 let _error = $state(/** @type {string | null} */ (null));
+let _sessionExpired = $state(false);
 /** Zeitstempel des letzten erfolgreichen Remote-Syncs (für UI-Indikator) */
 let _lastSync = $state(/** @type {string | null} */ (null));
 
@@ -71,6 +72,9 @@ export const tasks = {
 	get loading() { return _loading; },
 	get syncing() { return _syncing; },
 	get error() { return _error; },
+	get sessionExpired() { return _sessionExpired; },
+	/** Löst direkt einen neuen Box-Login aus (bei abgelaufener Sitzung). */
+	reLogin() { boxLogin(); },
 	get lastSync() { return _lastSync; },
 
 	get filtered() {
@@ -147,6 +151,7 @@ function _savePrefs() {
 export async function loadTasks() {
 	_loading = true;
 	_error = null;
+	_sessionExpired = false;
 	try {
 		const rows = await db.tasks.toArray();
 		_tasks = rankTasks(rows);
@@ -163,6 +168,7 @@ export async function initialSync() {
 
 	_syncing = true;
 	_error = null;
+	_sessionExpired = false;
 	try {
 		await retryFailedSyncs();
 		// Prefs und Tasks parallel laden
@@ -183,7 +189,8 @@ export async function initialSync() {
 		});
 	} catch (err) {
 		if (String(err).includes('SESSION_EXPIRED')) {
-			_error = 'Sitzung abgelaufen – bitte neu einloggen.';
+			_sessionExpired = true;
+			_error = null;
 		} else {
 			_error = `Sync-Fehler: ${err}`;
 		}
@@ -198,6 +205,7 @@ export async function initialSync() {
 export function stopSync() {
 	stopPolling();
 	_lastSync = null;
+	_sessionExpired = false;
 	// UI-Einstellungen beim Logout zurücksetzen
 	_minScore     = 0;
 	_activeAreas  = [];

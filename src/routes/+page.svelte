@@ -5,6 +5,7 @@
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import { tasks, setStatus, deleteTask } from '$lib/stores/taskStore.svelte.js';
+	import { login } from '$lib/auth/box.js';
 	import TaskCard from '$lib/components/TaskCard.svelte';
 	import AreaFilter from '$lib/components/AreaFilter.svelte';
 	import FocusView from '$lib/components/FocusView.svelte';
@@ -40,7 +41,17 @@
 		</div>
 	{/if}
 
-	{#if tasks.error}
+	{#if tasks.sessionExpired}
+		<div class="bg-amber-50 border border-amber-300 text-amber-900 text-sm px-4 py-3 rounded mb-3 flex items-center justify-between gap-3">
+			<span>⚠ Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.</span>
+			<button
+				onclick={login}
+				class="shrink-0 bg-ibm-blue hover:bg-ibm-blue-dark text-white text-xs font-semibold px-3 py-1.5 rounded transition-colors"
+			>
+				Neu anmelden
+			</button>
+		</div>
+	{:else if tasks.error}
 		<div class="bg-red-50 border border-red-200 text-red-800 text-xs px-3 py-2 rounded mb-3">
 			⚠ {tasks.error}
 		</div>

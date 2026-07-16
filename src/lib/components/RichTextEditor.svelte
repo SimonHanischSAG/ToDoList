@@ -16,6 +16,7 @@
 	import BulletList  from '@tiptap/extension-bullet-list';
 	import OrderedList from '@tiptap/extension-ordered-list';
 	import ListItem    from '@tiptap/extension-list-item';
+	import HardBreak   from '@tiptap/extension-hard-break';
 	import History     from '@tiptap/extension-history';
 	import { sinkListItem, liftListItem } from 'prosemirror-schema-list';
 
@@ -30,7 +31,7 @@
 	onMount(() => {
 		editor = new Editor({
 			element: editorEl,
-			extensions: [Document, Paragraph, Text, Bold, Underline, BulletList, OrderedList, ListItem, History],
+			extensions: [Document, Paragraph, Text, Bold, Underline, BulletList, OrderedList, ListItem, HardBreak, History],
 			content: value || '',
 			onUpdate: ({ editor }) => {
 				const html = editor.getHTML();

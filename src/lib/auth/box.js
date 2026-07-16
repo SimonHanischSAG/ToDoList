@@ -23,9 +23,16 @@ const STORAGE_KEY_TOKEN   = 'box_access_token';
 const STORAGE_KEY_REFRESH = 'box_refresh_token';
 const STORAGE_KEY_VERIFIER = 'box_pkce_verifier';
 const STORAGE_KEY_USER    = 'box_user';
+const STORAGE_KEY_EXPIRY  = 'box_token_expiry'; // Unix-Timestamp (ms) des Token-Ablaufs
+
+// Wieviele Millisekunden vor Ablauf der Token proaktiv erneuert wird
+const REFRESH_AHEAD_MS = 5 * 60 * 1000; // 5 Minuten
 
 // Laufender Refresh-Promise (verhindert parallele Refresh-Requests)
 let _refreshPromise = /** @type {Promise<boolean> | null} */ (null);
+
+// Proaktiver Refresh-Timer
+let _refreshTimer = /** @type {ReturnType<typeof setTimeout> | null} */ (null);
 
 // ── PKCE Helpers ───────────────────────────────────────────────────────────
 
@@ -134,6 +141,46 @@ export function getToken() {
 }
 
 /**
+ * Startet einen proaktiven Refresh-Timer, der das Token kurz vor Ablauf erneuert.
+ * Wird nach jedem erfolgreichen Token-Erhalt aufgerufen.
+ */
+export function startTokenRefreshTimer() {
+	if (!browser) return;
+	if (_refreshTimer) clearTimeout(_refreshTimer);
+
+	const expiry = parseInt(localStorage.getItem(STORAGE_KEY_EXPIRY) ?? '0', 10);
+	if (!expiry) return;
+
+	const msUntilRefresh = expiry - Date.now() - REFRESH_AHEAD_MS;
+	if (msUntilRefresh <= 0) {
+		// Token bereits abgelaufen oder kurz vor Ablauf → sofort refreshen
+		refreshToken();
+		return;
+	}
+
+	_refreshTimer = setTimeout(async () => {
+		_refreshTimer = null;
+		console.info('[Box Auth] Proaktiver Token-Refresh …');
+		const ok = await refreshToken();
+		if (ok) {
+			startTokenRefreshTimer(); // neuen Timer für das frische Token setzen
+		} else {
+			console.warn('[Box Auth] Proaktiver Refresh fehlgeschlagen – Nutzer muss sich neu einloggen.');
+		}
+	}, msUntilRefresh);
+}
+
+/**
+ * Stoppt den proaktiven Refresh-Timer (z.B. beim Logout).
+ */
+export function stopTokenRefreshTimer() {
+	if (_refreshTimer) {
+		clearTimeout(_refreshTimer);
+		_refreshTimer = null;
+	}
+}
+
+/**
  * Erneuert das Access Token still im Hintergrund via Refresh Token.
  * @returns {Promise<boolean>} true wenn erfolgreich
  */
@@ -187,8 +234,10 @@ export function getUser() {
  * Loggt den Nutzer aus (löscht lokalen State).
  */
 export function logout() {
+	stopTokenRefreshTimer();
 	localStorage.removeItem(STORAGE_KEY_TOKEN);
 	localStorage.removeItem(STORAGE_KEY_REFRESH);
+	localStorage.removeItem(STORAGE_KEY_EXPIRY);
 	localStorage.removeItem(STORAGE_KEY_USER);
 	// Box hat keine Server-seitige Logout-URL für SPAs
 	window.location.reload();
@@ -198,11 +247,18 @@ export function logout() {
 
 /**
  * Speichert Access + Refresh Token aus einer Token-Response.
+ * Berechnet und speichert auch den Ablaufzeitpunkt des Access Tokens.
  * @param {Record<string, string>} data
  */
 function saveTokens(data) {
 	if (data.access_token)  localStorage.setItem(STORAGE_KEY_TOKEN,   data.access_token);
 	if (data.refresh_token) localStorage.setItem(STORAGE_KEY_REFRESH, data.refresh_token);
+
+	// Box liefert expires_in in Sekunden (Standard: 3600 = 1h)
+	const expiresIn = parseInt(String(data.expires_in ?? '3600'), 10);
+	const expiry = Date.now() + expiresIn * 1000;
+	localStorage.setItem(STORAGE_KEY_EXPIRY, String(expiry));
+
 	const userName = data.token_extra_info?.name ?? null;
 	if (userName) localStorage.setItem(STORAGE_KEY_USER, JSON.stringify({ name: userName, login: '' }));
 }
