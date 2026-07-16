@@ -115,9 +115,11 @@ export async function handleRedirect() {
 	// Token in localStorage speichern – bleibt über Reloads/Tab-Schließen erhalten
 	localStorage.setItem(STORAGE_KEY_TOKEN, data.access_token);
 
-	// Nutzer-Profil laden
-	const user = await fetchCurrentUser(data.access_token);
-	if (user) localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(user));
+	// Nutzername aus dem Token-Response direkt lesen (kein extra API-Call nötig)
+	const userName = data.token_extra_info?.name ?? null;
+	if (userName) {
+		localStorage.setItem(STORAGE_KEY_USER, JSON.stringify({ name: userName, login: '' }));
+	}
 
 	return true;
 }
@@ -151,18 +153,3 @@ export function logout() {
 	window.location.reload();
 }
 
-// ── Internes ───────────────────────────────────────────────────────────────
-
-/**
- * Lädt das Profil des eingeloggten Nutzers via Box API.
- * @param {string} token
- * @returns {Promise<{ name: string, login: string } | null>}
- */
-async function fetchCurrentUser(token) {
-	const res = await fetch('https://api.box.com/2.0/users/me', {
-		headers: { Authorization: `Bearer ${token}` }
-	});
-	if (!res.ok) return null;
-	const data = await res.json();
-	return { name: data.name, login: data.login };
-}

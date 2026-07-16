@@ -54,7 +54,7 @@ async function getOrCreateFolder() {
 	const res = await boxFetch(
 		`${BOX_API}/folders/0/items?fields=id,name,type&limit=100`
 	);
-	if (!res.ok) throw new Error(`Box API Fehler: ${res.status}`);
+	if (!res.ok) throw new Error(`Box API Fehler: ${res.status} – ${await res.text()}`);
 	const data = await res.json();
 
 	const existing = data.entries?.find(
