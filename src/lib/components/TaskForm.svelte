@@ -117,12 +117,12 @@
 <!-- Natives dialog-Element: korrekte Accessibility + Escape-Taste -->
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
 <dialog
-	class="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-4 m-0 w-full h-full max-w-none max-h-none border-0"
+	class="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-start justify-center p-4 pt-8 sm:pt-6 m-0 w-full h-full max-w-none max-h-none border-0"
 	aria-label={isEdit ? 'Edit task' : 'New task'}
 	onmousedown={(e) => e.target === e.currentTarget && onclose()}
 	open
 >
-	<div class="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-2xl p-8 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
+	<div class="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-2xl p-8 space-y-4 shadow-xl max-h-[95vh] overflow-y-auto">
 		<div class="flex items-center justify-between">
 			<h2 class="font-bold text-ibm-text">{isEdit ? 'Edit task' : 'New task'}</h2>
 				<button onclick={onclose} tabindex="-1" class="text-ibm-text-muted hover:text-ibm-text" aria-label="Close">✕</button>

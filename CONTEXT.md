@@ -125,8 +125,12 @@ score = basePrio (urgent=80, high=60, normal=40, low=20)
 
 ## Offene Punkte
 
-- [ ] IBM Box Admin-Freigabe abwarten → `storage/index.js` umschalten
+- [ ] IBM Box Admin-Freigabe abwarten (Client ID produktiv schalten)
 - [ ] Erledigte Tasks anzeigen / Archiv-Ansicht
 - [ ] Task-Abhängigkeiten (blockedBy) in der UI editierbar machen
-- [ ] Push Notifications für Deadlines (iOS 16.4+)
+- [ ] Push Notifications für Deadlines (iOS 16.4+, `vite-plugin-pwa` vorbereitet)
 - [ ] Excel-Import direkt in der App (xlsx.js im Browser)
+- [x] Multi-Device-Sync: Optimistic Locking (ETag If-Match) + Polling alle 30 s in `storage/box.js`
+- [x] iPhone-Doku: PWA-Installation, App-Icon, iOS-Meta-Tags → `README.md`
+- [x] Details- und Comments-Felder doppelt so hoch (`min-h-[14rem]`)
+- [x] TaskForm-Dialog nach oben verschoben (`items-start` + `pt-6`/`pt-8`)

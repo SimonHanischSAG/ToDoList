@@ -4,7 +4,7 @@
  */
 
 import { db } from '../storage/db.js';
-import { schedulePush, syncFromStorage, retryFailedSyncs } from '../storage/index.js';
+import { schedulePush, syncFromStorage, retryFailedSyncs, startPolling, stopPolling } from '../storage/index.js';
 import { getToken } from '../auth/box.js';
 import { rankTasks, getFocusTasks, getAreas, getTopics } from '../engine/priority.js';
 import { createTask, normalizeTask } from '../model/task.js';
@@ -19,6 +19,8 @@ let _showDone = $state(false);
 let _loading = $state(false);
 let _syncing = $state(false);
 let _error = $state(/** @type {string | null} */ (null));
+/** Zeitstempel des letzten erfolgreichen Remote-Syncs (für UI-Indikator) */
+let _lastSync = $state(/** @type {string | null} */ (null));
 
 // ── Derived State ──────────────────────────────────────────────────────────
 export const tasks = {
@@ -75,6 +77,7 @@ togglePriority(prio) {
 	get loading() { return _loading; },
 	get syncing() { return _syncing; },
 	get error() { return _error; },
+	get lastSync() { return _lastSync; },
 
 	get filtered() {
 		let result = _tasks.filter(t => t.status === 'open');
@@ -157,6 +160,12 @@ export async function initialSync() {
 		await retryFailedSyncs();
 		await syncFromStorage();
 		await loadTasks();
+		_lastSync = new Date().toISOString();
+		// Polling starten: alle 30s auf Remote-Änderungen prüfen
+		startPolling(async () => {
+			await loadTasks();
+			_lastSync = new Date().toISOString();
+		});
 	} catch (err) {
 		if (String(err).includes('SESSION_EXPIRED')) {
 			_error = 'Sitzung abgelaufen – bitte neu einloggen.';
@@ -166,6 +175,14 @@ export async function initialSync() {
 	} finally {
 		_syncing = false;
 	}
+}
+
+/**
+ * Polling und Sync-Zustand zurücksetzen (beim Logout aufrufen).
+ */
+export function stopSync() {
+	stopPolling();
+	_lastSync = null;
 }
 
 /** @param {Partial<import('../model/task.js').Task>} data */

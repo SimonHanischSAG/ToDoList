@@ -6,9 +6,9 @@
 	import '../app.css';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
-	import { loadTasks, initialSync } from '$lib/stores/taskStore.svelte.js';
+	import { loadTasks, initialSync, stopSync, tasks } from '$lib/stores/taskStore.svelte.js';
 	import { exportToFile, importFromFile } from '$lib/storage/index.js';
-	import { login, handleRedirect, getToken, getUser, logout } from '$lib/auth/box.js';
+	import { login, handleRedirect, getToken, getUser, logout as boxLogout } from '$lib/auth/box.js';
 	import StoragePrompt from '$lib/components/StoragePrompt.svelte';
 
 	const STORAGE_CHOICE_KEY = 'ibmtodo_storage_choice'; // 'box' | 'local'
@@ -51,6 +51,21 @@
 	function chooseLocal() {
 		localStorage.setItem(STORAGE_CHOICE_KEY, 'local');
 		showPrompt = false;
+	}
+
+	/** Logout: Polling stoppen + Box-Session beenden */
+	function logout() {
+		stopSync();
+		localStorage.removeItem(STORAGE_CHOICE_KEY);
+		loggedIn = false;
+		user = null;
+		boxLogout();
+	}
+
+	/** Formatiert einen ISO-Zeitstempel als "HH:MM" für die Statusanzeige */
+	function formatTime(iso) {
+		if (!iso) return '';
+		return new Date(iso).toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' });
 	}
 
 	/** @param {Event} e */
@@ -97,6 +112,12 @@
 						↑ Import
 						<input type="file" accept=".json" onchange={handleImport} class="hidden" />
 					</label>
+					<!-- Sync-Indikator: zeigt letzten Remote-Sync oder aktiven Sync-Spinner -->
+					{#if tasks.syncing}
+						<span class="text-yellow-400 text-xs" title="Synchronisiere mit Box …">⟳ Sync…</span>
+					{:else if tasks.lastSync}
+						<span class="text-gray-500 text-xs" title="Zuletzt synchronisiert: {tasks.lastSync}">✓ {formatTime(tasks.lastSync)}</span>
+					{/if}
 					{#if user}
 						<span class="text-gray-400 text-xs">{user.name}</span>
 					{/if}

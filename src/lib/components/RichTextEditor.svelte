@@ -147,7 +147,7 @@
 	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 	<div
 		bind:this={editorEl}
-		class="rich-editor px-3 py-2 text-sm min-h-[7rem] focus:outline-none"
+		class="rich-editor px-3 py-2 text-sm min-h-[14rem] focus:outline-none"
 		data-placeholder={placeholder}
 		tabindex={tabindex}
 		onfocus={() => editor?.commands.focus()}
