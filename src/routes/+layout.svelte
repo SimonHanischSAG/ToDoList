@@ -9,9 +9,13 @@
 	import { loadTasks, initialSync } from '$lib/stores/taskStore.svelte.js';
 	import { exportToFile, importFromFile } from '$lib/storage/index.js';
 	import { login, handleRedirect, getToken, getUser, logout } from '$lib/auth/box.js';
+	import StoragePrompt from '$lib/components/StoragePrompt.svelte';
+
+	const STORAGE_CHOICE_KEY = 'ibmtodo_storage_choice'; // 'box' | 'local'
 
 	let { children } = $props();
 	let ready = $state(false);
+	let showPrompt = $state(false);
 	let showImport = $state(false);
 	let importMsg = $state('');
 	let loggedIn = $state(false);
@@ -19,14 +23,35 @@
 
 	onMount(async () => {
 		if (!browser) return;
+
 		// OAuth-Redirect verarbeiten (falls gerade nach Box-Login zurückgekehrt)
 		await handleRedirect();
 		loggedIn = !!getToken();
 		user = getUser();
+
+		// Nach erfolgreichem Box-Login Wahl merken
+		if (loggedIn) localStorage.setItem(STORAGE_CHOICE_KEY, 'box');
+
+		// Wenn noch keine Wahl getroffen und nicht gerade eingeloggt → Prompt zeigen
+		const choice = localStorage.getItem(STORAGE_CHOICE_KEY);
+		if (!choice && !loggedIn) {
+			showPrompt = true;
+			// App-Inhalt trotzdem schon laden (aus lokalem Cache)
+			await loadTasks();
+			ready = true;
+			return;
+		}
+
 		await loadTasks();
 		await initialSync();
 		ready = true;
 	});
+
+	/** Nutzer wählt lokalen Storage */
+	function chooseLocal() {
+		localStorage.setItem(STORAGE_CHOICE_KEY, 'local');
+		showPrompt = false;
+	}
 
 	/** @param {Event} e */
 	async function handleImport(e) {
@@ -40,6 +65,11 @@
 		setTimeout(() => importMsg = '', 3000);
 	}
 </script>
+
+<!-- Storage-Auswahl beim ersten Start -->
+{#if showPrompt}
+	<StoragePrompt onlocal={chooseLocal} />
+{/if}
 
 {#if !ready}
 	<div class="flex items-center justify-center min-h-screen bg-ibm-gray">
