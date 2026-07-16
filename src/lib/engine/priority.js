@@ -4,15 +4,55 @@
  *
  * Score-Formel:
  *   score = basePrio
- *         + deadlineBoost   (je näher die Deadline, desto mehr)
- *         + dependencyBoost (wenn andere Tasks auf mich warten)
- *         + agingBoost      (je älter der Task, desto leicht höher)
- *         - blockedPenalty  (wenn ich selbst blockiert bin)
+ *         + deadlineBoost    (je näher die Deadline, desto mehr)
+ *         + dependencyBoost  (wenn andere Tasks auf mich warten)
+ *         + agingBoost       (nur Critical/High: +max 10 wenn sehr alt)
+ *         - agingPenalty     (ab Medium-High abwärts: je älter seit letztem Update, desto weiter hinten)
+ *         - blockedPenalty   (wenn ich selbst blockiert bin)
+ *
+ * Aging-Penalty (basiert auf updatedAt):
+ *   - Gilt für: medium-high, normal, low, verylow, someday
+ *   - Critical / High: kein Aging-Einfluss
+ *   - Nach ~3 Monaten (13 Wochen): ca. 1 Kategorie tiefer im Score
+ *   - Nach ~6 Monaten (26 Wochen): ca. 2 Kategorien tiefer (Maximum, danach kein weiterer Abfall)
+ *   - "1 Kategorie" = Abstand zwischen zwei benachbarten basePrio-Werten (≈ 10 Punkte)
  */
 
 /** @import { Task } from './task.js' */
 
-const PRIO_BASE = { urgent: 80, high: 60, normal: 40, low: 20, verylow: 5 };
+/**
+ * Basis-Scores der 7 Prio-Stufen.
+ * Abstände bewusst gleichmäßig (10 Punkte), damit Aging-Penalty
+ * in "Kategorie-Sprüngen" intuitiv ablesbar ist.
+ */
+const PRIO_BASE = {
+	critical:    90,
+	high:        75,
+	'medium-high': 60,
+	normal:      45,
+	low:         30,
+	verylow:     15,
+	someday:      5
+};
+
+/**
+ * Ab dieser Prio-Stufe gilt der Aging-Penalty (absteigend inkl.).
+ * Critical und High sind ausgenommen.
+ */
+const AGING_PENALTY_PRIOS = new Set(['medium-high', 'normal', 'low', 'verylow', 'someday']);
+
+/**
+ * Maximaler Aging-Penalty in Score-Punkten (= 2 Kategorien à 10 Punkte).
+ * Ein Task kann nie weiter als 2 Stufen durch Aging fallen.
+ */
+const MAX_AGING_PENALTY = 20;
+
+/**
+ * Wochen bis zum Erreichen von 1 Kategorie Penalty.
+ * 13 Wochen ≈ 3 Monate → -10 Punkte (1 Kategorie).
+ * 26 Wochen ≈ 6 Monate → -20 Punkte (2 Kategorien = Maximum).
+ */
+const WEEKS_PER_CATEGORY = 13;
 
 /**
  * Berechnet den Score für einen einzelnen Task.
@@ -23,14 +63,14 @@ const PRIO_BASE = { urgent: 80, high: 60, normal: 40, low: 20, verylow: 5 };
 export function calcScore(task, allTasks) {
 	if (task.status !== 'open') return 0;
 
-	let score = PRIO_BASE[task.priority] ?? 40;
+	let score = PRIO_BASE[task.priority] ?? 45;
 
 	// 1. Deadline-Boost
 	if (task.dueDate) {
 		const daysLeft = daysDiff(new Date(), new Date(task.dueDate));
-		if (daysLeft < 0) score += 25; // überfällig
-		else if (daysLeft <= 3) score += 20;
-		else if (daysLeft <= 7) score += 10;
+		if (daysLeft < 0)   score += 25; // überfällig
+		else if (daysLeft <= 3)  score += 20;
+		else if (daysLeft <= 7)  score += 10;
 		else if (daysLeft <= 14) score += 5;
 	}
 
@@ -42,9 +82,21 @@ export function calcScore(task, allTasks) {
 		score += Math.min(15, isBlockerFor.length * 5);
 	}
 
-	// 3. Aging-Boost: Ältere offene Tasks leicht höher priorisieren
-	const ageInWeeks = Math.floor(daysDiff(new Date(task.createdAt), new Date()) / 7);
-	score += Math.min(20, ageInWeeks);
+	// 3. Aging – abhängig von der Prio-Stufe
+	const weeksOld = Math.floor(
+		daysDiff(new Date(task.updatedAt ?? task.createdAt), new Date()) / 7
+	);
+
+	if (AGING_PENALTY_PRIOS.has(task.priority)) {
+		// Medium-High und niedriger: Penalty je älter seit letztem Update
+		// Wächst linear bis zum Maximum (2 Kategorien = 20 Punkte)
+		const penalty = Math.min(MAX_AGING_PENALTY, Math.floor(weeksOld / WEEKS_PER_CATEGORY) * 10);
+		score -= penalty;
+	} else {
+		// Critical / High: kleiner Boost für sehr alte offene Tasks (max +10)
+		// damit wirklich vergessene dringende Tasks trotzdem sichtbar bleiben
+		score += Math.min(10, Math.floor(weeksOld / 4));
+	}
 
 	// 4. Blocked-Penalty: Bin ich selbst blockiert?
 	const isBlocked = task.blockedBy.some((id) => {

@@ -4,7 +4,7 @@
  */
 
 /** @typedef {'open' | 'done' | 'optional' | 'archived'} TaskStatus */
-/** @typedef {'urgent' | 'high' | 'normal' | 'low' | 'verylow'} TaskPriority */
+/** @typedef {'critical' | 'high' | 'medium-high' | 'normal' | 'low' | 'verylow' | 'someday'} TaskPriority */
 
 /**
 * @typedef {Object} Task
@@ -81,10 +81,17 @@ function mapStatus(s) {
 
 /** @param {unknown} p @returns {TaskPriority} */
 function mapPriority(p) {
+	// Direkte String-Werte (z.B. aus JSON-Import) durchreichen
+	const valid = ['critical', 'high', 'medium-high', 'normal', 'low', 'verylow', 'someday'];
+	if (typeof p === 'string' && valid.includes(p)) return /** @type {TaskPriority} */ (p);
+	// Legacy: 'urgent' auf 'critical' mappen
+	if (p === 'urgent') return 'critical';
+	// Legacy: numerische Werte aus Excel-Import
 	const n = Number(p);
 	if (isNaN(n)) return 'normal';
-	if (n > 100) return 'urgent';
-	if (n > 50) return 'high';
-	if (n >= 0) return 'normal';
+	if (n > 100) return 'critical';
+	if (n > 75)  return 'high';
+	if (n > 50)  return 'medium-high';
+	if (n >= 0)  return 'normal';
 	return 'low';
 }
