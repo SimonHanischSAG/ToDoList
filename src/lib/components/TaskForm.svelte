@@ -5,7 +5,7 @@
 -->
 <script>
 	import { onMount } from 'svelte';
-	import { addTask, updateTask, tasks } from '$lib/stores/taskStore.svelte.js';
+	import { addTask, updateTask, setStatus, tasks } from '$lib/stores/taskStore.svelte.js';
 	import RichTextEditor from './RichTextEditor.svelte';
 
 	/**
@@ -35,7 +35,39 @@
 	let area        = $state(t?.area        ?? tasks.activeArea ?? '');
 	let topic       = $state(t?.topic       ?? '');
 	let dueDate     = $state(t?.dueDate     ?? '');
+	let tags        = $state(/** @type {string[]} */ ([...(t?.tags ?? [])]));
+	let tagInput    = $state('');
 	let saving      = $state(false);
+
+	/** Vorschläge: alle bekannten Tags, gefiltert nach aktuellem Eingabewert */
+	const tagSuggestions = $derived(
+		tagInput.trim().length === 0
+			? []
+			: tasks.allTags.filter(
+				tg => tg.toLowerCase().includes(tagInput.toLowerCase()) && !tags.includes(tg)
+			)
+	);
+
+	/** Tag hinzufügen (Duplikate verhindern) */
+	function addTag(value) {
+		const v = value.trim().replace(/^#+/, '');
+		if (v && !tags.includes(v)) tags = [...tags, v];
+		tagInput = '';
+	}
+
+	function removeTag(tag) {
+		tags = tags.filter(tg => tg !== tag);
+	}
+
+	function handleTagKeydown(e) {
+		if (e.key === 'Enter' || e.key === ',') {
+			e.preventDefault();
+			addTag(tagInput);
+		} else if (e.key === 'Backspace' && tagInput === '' && tags.length > 0) {
+			tags = tags.slice(0, -1);
+		}
+	}
+	let markAsDone = $state(false);
 
 	/** Gibt ein Datum als YYYY-MM-DD-String zurück */
 	function toDateStr(date) {
@@ -94,8 +126,12 @@
 						priority,
 						area:        area.trim(),
 						topic:       topic.trim(),
+						tags,
 						dueDate:     dueDate || null
 					});
+					if (markAsDone) {
+						await setStatus(t.id, 'done');
+					}
 				} else {
 					await addTask({
 						title:       title.trim(),
@@ -104,6 +140,7 @@
 						priority,
 						area:        area.trim(),
 						topic:       topic.trim(),
+						tags,
 						dueDate:     dueDate || null
 					});
 				}
@@ -230,15 +267,64 @@
 					</div>
 				</div>
 		
-				<!-- Speichern: tabindex 7 -->
+				<!-- Tags -->
+				<div>
+					<label class="block text-xs font-semibold text-ibm-text-muted mb-1">Tags (optional)</label>
+					<!-- Hinzugefügte Tags als Pills -->
+					{#if tags.length > 0}
+						<div class="flex flex-wrap gap-1 mb-1.5">
+							{#each tags as tag}
+								<span class="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded">
+									#{tag}
+									<button
+										type="button"
+										tabindex="-1"
+										onclick={() => removeTag(tag)}
+										class="text-blue-400 hover:text-blue-700 leading-none"
+										aria-label="Tag entfernen"
+									>×</button>
+								</span>
+							{/each}
+						</div>
+					{/if}
+					<input
+						id="task-tags"
+						type="text"
+						bind:value={tagInput}
+						list="tag-suggestions"
+						onkeydown={handleTagKeydown}
+						onchange={() => { if (tagInput.trim()) addTag(tagInput); }}
+						placeholder="Tag eingeben, Enter oder , zum Hinzufügen…"
+						tabindex="7"
+						class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
+					/>
+					<datalist id="tag-suggestions">
+						{#each tagSuggestions as tg}<option value={tg}></option>{/each}
+					</datalist>
+				</div>
+	
+				<!-- Mark as Done Checkbox (nur im Edit-Modus) -->
+				{#if isEdit}
+					<label class="flex items-center gap-2 cursor-pointer select-none text-sm text-ibm-text">
+						<input
+							type="checkbox"
+							bind:checked={markAsDone}
+							tabindex="8"
+							class="w-4 h-4 rounded border-ibm-gray-dark accent-ibm-blue cursor-pointer"
+						/>
+						Mark as Done
+					</label>
+				{/if}
+	
+				<!-- Speichern: tabindex 9 -->
 				<button
 					type="submit"
-					tabindex="7"
+					tabindex={isEdit ? 9 : 8}
 					disabled={saving || !title.trim()}
 					title="Speichern (Ctrl+S)"
 					class="relative group w-full bg-ibm-blue hover:bg-ibm-blue-dark disabled:opacity-50 text-white font-semibold py-2.5 rounded-md text-sm transition-colors"
 				>
-					{saving ? 'Saving...' : isEdit ? 'Save changes' : 'Save task'}
+					{saving ? 'Saving...' : 'Save'}
 					<span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-0.5 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity">
 						Ctrl+S
 					</span>
