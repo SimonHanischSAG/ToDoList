@@ -110,11 +110,12 @@ export async function handleRedirect() {
 	}
 
 	const data = await res.json();
-	sessionStorage.setItem(STORAGE_KEY_TOKEN, data.access_token);
+	// Token in localStorage speichern – bleibt über Reloads/Tab-Schließen erhalten
+	localStorage.setItem(STORAGE_KEY_TOKEN, data.access_token);
 
 	// Nutzer-Profil laden
 	const user = await fetchCurrentUser(data.access_token);
-	if (user) sessionStorage.setItem(STORAGE_KEY_USER, JSON.stringify(user));
+	if (user) localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(user));
 
 	return true;
 }
@@ -125,7 +126,7 @@ export async function handleRedirect() {
  */
 export function getToken() {
 	if (!browser) return null;
-	return sessionStorage.getItem(STORAGE_KEY_TOKEN);
+	return localStorage.getItem(STORAGE_KEY_TOKEN);
 }
 
 /**
@@ -134,7 +135,7 @@ export function getToken() {
  */
 export function getUser() {
 	if (!browser) return null;
-	const raw = sessionStorage.getItem(STORAGE_KEY_USER);
+	const raw = localStorage.getItem(STORAGE_KEY_USER);
 	return raw ? JSON.parse(raw) : null;
 }
 
@@ -142,8 +143,8 @@ export function getUser() {
  * Loggt den Nutzer aus (löscht lokalen State).
  */
 export function logout() {
-	sessionStorage.removeItem(STORAGE_KEY_TOKEN);
-	sessionStorage.removeItem(STORAGE_KEY_USER);
+	localStorage.removeItem(STORAGE_KEY_TOKEN);
+	localStorage.removeItem(STORAGE_KEY_USER);
 	// Box hat keine Server-seitige Logout-URL für SPAs
 	window.location.reload();
 }
