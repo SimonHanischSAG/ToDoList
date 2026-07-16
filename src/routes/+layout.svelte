@@ -1,7 +1,6 @@
 <!--
   Root-Layout der App
-  Lokaler Modus: kein Login nötig.
-  Box-Modus: wird aktiviert sobald IBM Box-App freigegeben ist.
+  Box-Modus: Nutzer loggt sich mit eigenem Box-Account ein.
 -->
 <script>
 	import '../app.css';
@@ -9,14 +8,21 @@
 	import { browser } from '$app/environment';
 	import { loadTasks, initialSync } from '$lib/stores/taskStore.svelte.js';
 	import { exportToFile, importFromFile } from '$lib/storage/index.js';
+	import { login, handleRedirect, getToken, getUser, logout } from '$lib/auth/box.js';
 
 	let { children } = $props();
 	let ready = $state(false);
 	let showImport = $state(false);
 	let importMsg = $state('');
+	let loggedIn = $state(false);
+	let user = $state(/** @type {{ name: string, login: string } | null} */ (null));
 
 	onMount(async () => {
 		if (!browser) return;
+		// OAuth-Redirect verarbeiten (falls gerade nach Box-Login zurückgekehrt)
+		await handleRedirect();
+		loggedIn = !!getToken();
+		user = getUser();
 		await loadTasks();
 		await initialSync();
 		ready = true;
@@ -48,19 +54,38 @@
 		<header class="bg-ibm-text shadow-sm px-4 py-3 flex items-center justify-between">
 			<span class="text-white font-bold text-lg">IBM Todo</span>
 			<div class="flex items-center gap-3">
-				<!-- Export -->
-				<button
-					onclick={exportToFile}
-					class="text-gray-400 hover:text-white text-xs transition-colors"
-					title="Alle Tasks als JSON exportieren"
-				>
-					↓ Export
-				</button>
-				<!-- Import -->
-				<label class="text-gray-400 hover:text-white text-xs transition-colors cursor-pointer" title="Tasks aus JSON importieren">
-					↑ Import
-					<input type="file" accept=".json" onchange={handleImport} class="hidden" />
-				</label>
+				{#if loggedIn}
+					<!-- Eingeloggt: Export / Import / Nutzer / Logout -->
+					<button
+						onclick={exportToFile}
+						class="text-gray-400 hover:text-white text-xs transition-colors"
+						title="Alle Tasks als JSON exportieren"
+					>
+						↓ Export
+					</button>
+					<label class="text-gray-400 hover:text-white text-xs transition-colors cursor-pointer" title="Tasks aus JSON importieren">
+						↑ Import
+						<input type="file" accept=".json" onchange={handleImport} class="hidden" />
+					</label>
+					{#if user}
+						<span class="text-gray-400 text-xs">{user.name}</span>
+					{/if}
+					<button
+						onclick={logout}
+						class="text-gray-400 hover:text-white text-xs transition-colors"
+						title="Box-Logout"
+					>
+						Logout
+					</button>
+				{:else}
+					<!-- Nicht eingeloggt: Login-Button -->
+					<button
+						onclick={login}
+						class="bg-ibm-blue hover:bg-ibm-blue-dark text-white text-xs font-semibold px-3 py-1 rounded transition-colors"
+					>
+						Mit Box anmelden
+					</button>
+				{/if}
 			</div>
 		</header>
 

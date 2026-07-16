@@ -18,7 +18,7 @@
 	<!-- Sync-Indicator -->
 	{#if tasks.syncing}
 		<div class="bg-blue-50 border border-blue-200 text-blue-800 text-xs px-3 py-2 rounded mb-3">
-			⟳ Syncing with OneDrive...
+			⟳ Syncing with Box...
 		</div>
 	{/if}
 

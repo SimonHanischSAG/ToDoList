@@ -5,6 +5,7 @@
 
 import { db } from '../storage/db.js';
 import { schedulePush, syncFromStorage, retryFailedSyncs } from '../storage/index.js';
+import { getToken } from '../auth/box.js';
 import { rankTasks, getFocusTasks, getAreas, getTopics } from '../engine/priority.js';
 import { createTask, normalizeTask } from '../model/task.js';
 
@@ -132,6 +133,9 @@ export async function loadTasks() {
 }
 
 export async function initialSync() {
+	// Ohne Token keinen Sync versuchen – Nutzer muss sich erst einloggen
+	if (!getToken()) return;
+
 	_syncing = true;
 	_error = null;
 	try {
