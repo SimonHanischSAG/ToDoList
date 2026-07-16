@@ -93,6 +93,7 @@
 	<div class="flex items-center gap-0.5 px-2 py-1 border-b border-gray-200 bg-gray-50">
 		<button
 			type="button"
+			tabindex="-1"
 			onclick={() => cmd('toggleBold')}
 			class="toolbar-btn font-bold {isBold ? 'active' : ''}"
 			title="Fett (Strg+B)"
@@ -100,6 +101,7 @@
 
 		<button
 			type="button"
+			tabindex="-1"
 			onclick={() => cmd('toggleUnderline')}
 			class="toolbar-btn underline {isUnderline ? 'active' : ''}"
 			title="Unterstrichen (Strg+U)"
@@ -109,6 +111,7 @@
 
 		<button
 			type="button"
+			tabindex="-1"
 			onclick={() => cmd('toggleBulletList')}
 			class="toolbar-btn {isBullet ? 'active' : ''}"
 			title="Aufzaehlungsliste"
@@ -116,6 +119,7 @@
 
 		<button
 			type="button"
+			tabindex="-1"
 			onclick={() => cmd('toggleOrderedList')}
 			class="toolbar-btn {isOrdered ? 'active' : ''}"
 			title="Nummerierte Liste"
