@@ -34,15 +34,32 @@ export const tasks = {
 	/** @returns {string[]} */
 	get activeAreas() { return _activeAreas; },
 	/** @param {string[]} v */
-	set activeAreas(v) { _activeAreas = v; _savePrefs(); },
+	set activeAreas(v) {
+		_activeAreas = v;
+		// Aktive Topics bereinigen
+		const visibleTopicSet = new Set(
+			_tasks
+				.filter(t => t.status === 'open' && (v.length === 0 || v.includes(t.area)) && t.topic)
+				.map(t => t.topic)
+		);
+		_activeTopics = _activeTopics.filter(tp => visibleTopicSet.has(tp));
+		_savePrefs();
+	},
 
-	/** Einzelne Area togglen (Mehrfachauswahl) */
+	/** Einzelne Area togglen (Mehrfachauswahl); Topics zurücksetzen wenn sie in neuer Auswahl nicht mehr existieren */
 	toggleArea(area) {
 		if (_activeAreas.includes(area)) {
 			_activeAreas = _activeAreas.filter(a => a !== area);
 		} else {
 			_activeAreas = [..._activeAreas, area];
 		}
+		// Aktive Topics bereinigen: nur Topics behalten, die noch sichtbar sind
+		const visibleTopicSet = new Set(
+			_tasks
+				.filter(t => t.status === 'open' && (_activeAreas.length === 0 || _activeAreas.includes(t.area)) && t.topic)
+				.map(t => t.topic)
+		);
+		_activeTopics = _activeTopics.filter(tp => visibleTopicSet.has(tp));
 		_savePrefs();
 	},
 
@@ -126,6 +143,48 @@ export const tasks = {
 		/** @type {Record<string, number>} */
 		const counts = {};
 		for (const t of _tasks.filter(t => t.status === 'open' && t.topic)) {
+			counts[t.topic] = (counts[t.topic] ?? 0) + 1;
+		}
+		return counts;
+	},
+
+	/**
+	 * Tasks die für die Topic-Filterzeile relevant sind:
+	 * open + aktive Areas + aktiver Suchbegriff (ohne Topic-Filter selbst).
+	 */
+	get _topicBase() {
+		let result = _tasks.filter(t => t.status === 'open');
+		if (_activeAreas.length > 0) result = result.filter(t => _activeAreas.includes(t.area));
+		if (_searchQuery.trim()) {
+			const q = _searchQuery.toLowerCase();
+			result = result.filter(t =>
+				t.title.toLowerCase().includes(q) ||
+				t.description.toLowerCase().includes(q) ||
+				t.area.toLowerCase().includes(q) ||
+				(t.topic ?? '').toLowerCase().includes(q) ||
+				t.tags.some(tag => tag.toLowerCase().includes(q))
+			);
+		}
+		return result;
+	},
+
+	/** Topics die nach Area- und Suche-Filter noch existieren (alphabetisch sortiert) */
+	get visibleTopics() {
+		const set = new Set(this._topicBase.filter(t => t.topic).map(t => t.topic));
+		return [...set].sort();
+	},
+
+	/** Alle einzigartigen Tags über alle Tasks (alphabetisch sortiert) */
+	get allTags() {
+		const set = new Set(_tasks.flatMap(t => t.tags));
+		return [...set].sort();
+	},
+
+	/** Zählung der Topics, beschränkt auf gefilterte Basis-Tasks */
+	get countByTopicFiltered() {
+		/** @type {Record<string, number>} */
+		const counts = {};
+		for (const t of this._topicBase.filter(t => t.topic)) {
 			counts[t.topic] = (counts[t.topic] ?? 0) + 1;
 		}
 		return counts;

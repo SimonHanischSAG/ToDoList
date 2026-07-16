@@ -9,6 +9,16 @@
 <script>
 	import { tasks } from '$lib/stores/taskStore.svelte.js';
 
+	/** Scrollt eine Filter-Zeile um eine Seite nach links/rechts */
+	function scrollRow(el, dir) {
+		if (!el) return;
+		el.scrollBy({ left: dir * 160, behavior: 'smooth' });
+	}
+
+	/** Ref-Variablen für die beiden scrollbaren Zeilen */
+	let areaRow = $state(null);
+	let topicRow = $state(null);
+
 	/**
 	 * Prio-Markierungen auf der Slider-Skala.
 	 * basePrio-Werte aus priority.js – zeigen den "frischen" Score einer Kategorie.
@@ -60,56 +70,58 @@
 </script>
 
 <!-- Area-Filter -->
-<div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
-	<span class="flex-shrink-0 text-xs text-ibm-text-muted self-center">Area:</span>
+<div class="filter-row-wrapper">
+	<span class="flex-shrink-0 text-xs text-ibm-text-muted self-center pr-1">Area:</span>
+	<div class="filter-row" bind:this={areaRow}>
+		<button
+			onclick={() => tasks.activeAreas = []}
+			class="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors
+			       {tasks.activeAreas.length === 0
+			         ? 'bg-ibm-blue text-white border-ibm-blue'
+			         : 'bg-ibm-gray text-ibm-text-muted border-ibm-gray-dark hover:border-ibm-blue hover:text-ibm-blue'}"
+		>
+			All
+			<span class="ml-1 opacity-70">{Object.values(tasks.countByArea).reduce((a, b) => a + b, 0)}</span>
+		</button>
 
-	<button
-		onclick={() => tasks.activeAreas = []}
-		class="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors
-		       {tasks.activeAreas.length === 0
-		         ? 'bg-ibm-blue text-white border-ibm-blue'
-		         : 'bg-ibm-gray text-ibm-text-muted border-ibm-gray-dark hover:border-ibm-blue hover:text-ibm-blue'}"
-	>
-		All
-		<span class="ml-1 opacity-70">{Object.values(tasks.countByArea).reduce((a, b) => a + b, 0)}</span>
-	</button>
-
-	{#each tasks.areas as area}
-		{@const count = tasks.countByArea[area] ?? 0}
-		{#if count > 0}
-			{@const active = tasks.activeAreas.includes(area)}
-			<button
-				onclick={() => tasks.toggleArea(area)}
-				class="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors
-				       {active
-				         ? 'bg-ibm-blue text-white border-ibm-blue'
-				         : 'bg-ibm-gray text-ibm-text-muted border-ibm-gray-dark hover:border-ibm-blue hover:text-ibm-blue'}"
-			>
-				{area}
-				<span class="ml-1 opacity-70">{count}</span>
-			</button>
-		{/if}
-	{/each}
+		{#each tasks.areas as area}
+			{@const count = tasks.countByArea[area] ?? 0}
+			{#if count > 0}
+				{@const active = tasks.activeAreas.includes(area)}
+				<button
+					onclick={() => tasks.toggleArea(area)}
+					class="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors
+					       {active
+					         ? 'bg-ibm-blue text-white border-ibm-blue'
+					         : 'bg-ibm-gray text-ibm-text-muted border-ibm-gray-dark hover:border-ibm-blue hover:text-ibm-blue'}"
+				>
+					{area}
+					<span class="ml-1 opacity-70">{count}</span>
+				</button>
+			{/if}
+		{/each}
+	</div>
+	<button class="scroll-btn" onclick={() => scrollRow(areaRow, -1)} aria-label="Scroll left">‹</button>
+	<button class="scroll-btn" onclick={() => scrollRow(areaRow,  1)} aria-label="Scroll right">›</button>
 </div>
 
 <!-- Topic-Filter (nur wenn Topics vorhanden) -->
-{#if tasks.topics.length > 0}
-	<div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide mt-1">
-		<span class="flex-shrink-0 text-xs text-ibm-text-muted self-center">Topic:</span>
+{#if tasks.visibleTopics.length > 0}
+	<div class="filter-row-wrapper mt-1">
+		<span class="flex-shrink-0 text-xs text-ibm-text-muted self-center pr-1">Topic:</span>
+		<div class="filter-row" bind:this={topicRow}>
+			<button
+				onclick={() => tasks.activeTopics = []}
+				class="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors
+				       {tasks.activeTopics.length === 0
+				         ? 'bg-gray-400 text-white border-gray-400'
+				         : 'bg-gray-200 text-ibm-text-muted border-ibm-gray-dark hover:border-gray-400 hover:text-ibm-text'}"
+			>
+				All
+			</button>
 
-		<button
-			onclick={() => tasks.activeTopics = []}
-			class="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors
-			       {tasks.activeTopics.length === 0
-			         ? 'bg-gray-400 text-white border-gray-400'
-			         : 'bg-gray-200 text-ibm-text-muted border-ibm-gray-dark hover:border-gray-400 hover:text-ibm-text'}"
-		>
-			All
-		</button>
-
-		{#each tasks.topics as topic}
-			{@const count = tasks.countByTopic[topic] ?? 0}
-			{#if count > 0}
+			{#each tasks.visibleTopics as topic}
+				{@const count = tasks.countByTopicFiltered[topic] ?? 0}
 				{@const active = tasks.activeTopics.includes(topic)}
 				<button
 					onclick={() => tasks.toggleTopic(topic)}
@@ -121,8 +133,10 @@
 					{topic}
 					<span class="ml-1 opacity-70">{count}</span>
 				</button>
-			{/if}
-		{/each}
+			{/each}
+		</div>
+		<button class="scroll-btn" onclick={() => scrollRow(topicRow, -1)} aria-label="Scroll left">‹</button>
+		<button class="scroll-btn" onclick={() => scrollRow(topicRow,  1)} aria-label="Scroll right">›</button>
 	</div>
 {/if}
 
@@ -189,6 +203,61 @@
 </div>
 
 <style>
+	/* ── Filter-Zeile (Area / Topic) ── */
+	.filter-row-wrapper {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		min-width: 0;
+	}
+
+	.filter-row {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		overflow-x: auto;
+		padding-bottom: 4px;
+		/* Scrollbar auf Desktop sichtbar machen (dünn, dezent) */
+		scrollbar-width: thin;
+		scrollbar-color: #cbd5e1 transparent;
+		scroll-snap-type: x proximity;
+		flex: 1;
+		min-width: 0;
+	}
+
+	.filter-row::-webkit-scrollbar {
+		height: 4px;
+	}
+	.filter-row::-webkit-scrollbar-thumb {
+		background: #cbd5e1;
+		border-radius: 2px;
+	}
+	.filter-row::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	/* Pfeil-Buttons nur sichtbar wenn nötig (hover auf wrapper) */
+	.scroll-btn {
+		flex-shrink: 0;
+		width: 20px;
+		height: 20px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 16px;
+		line-height: 1;
+		color: #9ca3af;
+		background: transparent;
+		border: none;
+		padding: 0;
+		cursor: pointer;
+		transition: color 0.15s;
+	}
+	.scroll-btn:hover {
+		color: #3b82d4;
+	}
+
+	/* Score-Slider */
 	.score-slider::-webkit-slider-thumb {
 		appearance: none;
 		width: 14px;
