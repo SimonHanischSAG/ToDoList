@@ -411,3 +411,83 @@ export function stopPolling() {
 	onRemoteChange = null;
 	knownEtag = null;
 }
+
+// ── UI-Präferenzen (prefs.json) ────────────────────────────────────────────
+
+const PREFS_FILE_NAME = 'prefs.json';
+
+/** Gecachte File-ID für prefs.json */
+let prefsFileId = null;
+/** Debounce-Timer für Prefs-Upload */
+let prefsUploadTimer = null;
+const PREFS_DEBOUNCE_MS = 1500;
+
+/**
+ * @typedef {{ minScore: number, activeAreas: string[], activeTopics: string[], showDone: boolean }} UIPrefs
+ */
+
+/**
+ * Lädt prefs.json aus Box.
+ * Gibt null zurück wenn noch keine Präferenzen gespeichert wurden.
+ * @returns {Promise<UIPrefs | null>}
+ */
+export async function loadPrefs() {
+	try {
+		const folder = await getOrCreateFolder();
+		const res = await boxFetch(
+			`${BOX_API}/folders/${folder}/items?fields=id,name,type&limit=100`
+		);
+		if (!res.ok) return null;
+		const data = await res.json();
+		const file = data.entries?.find((e) => e.type === 'file' && e.name === PREFS_FILE_NAME);
+		if (!file) return null;
+		prefsFileId = file.id;
+
+		const content = await boxFetch(`${BOX_API}/files/${file.id}/content`);
+		if (!content.ok) return null;
+		return /** @type {UIPrefs} */ (await content.json());
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * Speichert die UI-Präferenzen als prefs.json in Box.
+ * @param {UIPrefs} prefs
+ * @returns {Promise<void>}
+ */
+export async function savePrefs(prefs) {
+	try {
+		const folder = await getOrCreateFolder();
+		const body = JSON.stringify(prefs, null, 2);
+		const formData = new FormData();
+		formData.append(
+			'attributes',
+			JSON.stringify(
+				prefsFileId
+					? { name: PREFS_FILE_NAME }
+					: { name: PREFS_FILE_NAME, parent: { id: folder } }
+			)
+		);
+		formData.append('file', new Blob([body], { type: 'application/json' }), PREFS_FILE_NAME);
+		const url = prefsFileId
+			? `https://upload.box.com/api/2.0/files/${prefsFileId}/content`
+			: `https://upload.box.com/api/2.0/files/content`;
+		const res = await boxFetch(url, { method: 'POST', body: formData });
+		if (res.ok) {
+			const result = await res.json();
+			prefsFileId = result.entries?.[0]?.id ?? prefsFileId;
+		}
+	} catch (err) {
+		console.warn('[Box] Prefs-Speichern fehlgeschlagen:', err);
+	}
+}
+
+/**
+ * Plant einen debounced Prefs-Upload.
+ * @param {UIPrefs} prefs
+ */
+export function schedulePrefs(prefs) {
+	if (prefsUploadTimer) clearTimeout(prefsUploadTimer);
+	prefsUploadTimer = setTimeout(() => savePrefs(prefs), PREFS_DEBOUNCE_MS);
+}

@@ -4,7 +4,7 @@
  */
 
 import { db } from '../storage/db.js';
-import { schedulePush, syncFromStorage, retryFailedSyncs, startPolling, stopPolling } from '../storage/index.js';
+import { schedulePush, syncFromStorage, retryFailedSyncs, startPolling, stopPolling, loadPrefs, schedulePrefs } from '../storage/index.js';
 import { getToken } from '../auth/box.js';
 import { rankTasks, getFocusTasks, getAreas, getTopics } from '../engine/priority.js';
 import { createTask, normalizeTask } from '../model/task.js';
@@ -33,7 +33,7 @@ export const tasks = {
 	/** @returns {string[]} */
 	get activeAreas() { return _activeAreas; },
 	/** @param {string[]} v */
-	set activeAreas(v) { _activeAreas = v; },
+	set activeAreas(v) { _activeAreas = v; _savePrefs(); },
 
 	/** Einzelne Area togglen (Mehrfachauswahl) */
 	toggleArea(area) {
@@ -42,30 +42,32 @@ export const tasks = {
 		} else {
 			_activeAreas = [..._activeAreas, area];
 		}
+		_savePrefs();
 	},
-/** @returns {string[]} */
-get activeTopics() { return _activeTopics; },
-/** @param {string[]} v */
-set activeTopics(v) { _activeTopics = v; },
 
-/** Einzelnes Topic togglen (Mehrfachauswahl) */
-toggleTopic(topic) {
-	if (_activeTopics.includes(topic)) {
-		_activeTopics = _activeTopics.filter(t => t !== topic);
-	} else {
-		_activeTopics = [..._activeTopics, topic];
-	}
-},
+	/** @returns {string[]} */
+	get activeTopics() { return _activeTopics; },
+	/** @param {string[]} v */
+	set activeTopics(v) { _activeTopics = v; _savePrefs(); },
 
-/** Score-Mindestgrenze für den Slider-Filter (0 = alles anzeigen) */
-get minScore() { return _minScore; },
-set minScore(v) { _minScore = v; },
+	/** Einzelnes Topic togglen (Mehrfachauswahl) */
+	toggleTopic(topic) {
+		if (_activeTopics.includes(topic)) {
+			_activeTopics = _activeTopics.filter(t => t !== topic);
+		} else {
+			_activeTopics = [..._activeTopics, topic];
+		}
+		_savePrefs();
+	},
 
+	/** Score-Mindestgrenze für den Slider-Filter (0 = alles anzeigen) */
+	get minScore() { return _minScore; },
+	set minScore(v) { _minScore = v; _savePrefs(); },
 
 	get searchQuery() { return _searchQuery; },
 	set searchQuery(v) { _searchQuery = v; },
 	get showDone() { return _showDone; },
-	set showDone(v) { _showDone = v; },
+	set showDone(v) { _showDone = v; _savePrefs(); },
 	get loading() { return _loading; },
 	get syncing() { return _syncing; },
 	get error() { return _error; },
@@ -128,6 +130,20 @@ set minScore(v) { _minScore = v; },
 
 // ── Aktionen ───────────────────────────────────────────────────────────────
 
+/**
+ * Interne Hilfsfunktion: speichert die aktuellen UI-Einstellungen debounced nach Box.
+ * Wird nur aufgerufen wenn ein Token vorhanden ist (= eingeloggt).
+ */
+function _savePrefs() {
+	if (!getToken()) return;
+	schedulePrefs({
+		minScore:     _minScore,
+		activeAreas:  _activeAreas,
+		activeTopics: _activeTopics,
+		showDone:     _showDone
+	});
+}
+
 export async function loadTasks() {
 	_loading = true;
 	_error = null;
@@ -149,7 +165,15 @@ export async function initialSync() {
 	_error = null;
 	try {
 		await retryFailedSyncs();
-		await syncFromStorage();
+		// Prefs und Tasks parallel laden
+		const [prefs] = await Promise.all([loadPrefs(), syncFromStorage()]);
+		// Gespeicherte UI-Einstellungen anwenden (nur wenn Wert sinnvoll ist)
+		if (prefs) {
+			if (typeof prefs.minScore === 'number')       _minScore     = prefs.minScore;
+			if (Array.isArray(prefs.activeAreas))         _activeAreas  = prefs.activeAreas;
+			if (Array.isArray(prefs.activeTopics))        _activeTopics = prefs.activeTopics;
+			if (typeof prefs.showDone === 'boolean')      _showDone     = prefs.showDone;
+		}
 		await loadTasks();
 		_lastSync = new Date().toISOString();
 		// Polling starten: alle 30s auf Remote-Änderungen prüfen
@@ -174,6 +198,11 @@ export async function initialSync() {
 export function stopSync() {
 	stopPolling();
 	_lastSync = null;
+	// UI-Einstellungen beim Logout zurücksetzen
+	_minScore     = 0;
+	_activeAreas  = [];
+	_activeTopics = [];
+	_showDone     = false;
 }
 
 /** @param {Partial<import('../model/task.js').Task>} data */

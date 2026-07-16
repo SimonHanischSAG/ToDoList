@@ -24,12 +24,19 @@
 		{ score:  5, label: 'Someday',  short: 'Some',  color: 'text-slate-300' },
 	];
 
-	/** Welcher Prio-Bereich liegt knapp über dem aktuellen minScore? */
+	/**
+	 * Welche Prio-Kategorie entspricht dem aktuellen minScore?
+	 * Wir suchen die Markierung mit dem höchsten Score der noch <= minScore ist
+	 * (= die Kategorie auf deren Niveau der Slider gerade steht).
+	 * Beispiel: minScore=50 → liegt zwischen Normal(45) und Med-High(60) → zeigt "Med-High"
+	 * weil 60 die nächste Kategorie ist, die man gerade hereinlässt.
+	 */
 	function activeLabel(minScore) {
 		if (minScore === 0) return null;
-		// Nächste Markierung, die >= minScore ist
-		const above = SCORE_MARKS.find(m => m.score >= minScore);
-		return above ?? SCORE_MARKS[SCORE_MARKS.length - 1];
+		// Kleinste Markierung deren Score >= minScore (= niedrigste sichtbare Kategorie)
+		// SCORE_MARKS ist absteigend sortiert → von hinten suchen
+		const mark = [...SCORE_MARKS].reverse().find(m => m.score >= minScore);
+		return mark ?? SCORE_MARKS[0]; // Fallback: Critical
 	}
 
 	/** Hinweis-Text, wenn Aging einen Task verschoben haben könnte */

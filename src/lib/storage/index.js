@@ -11,7 +11,7 @@
  */
 
 // Aktives Backend: Box Cloud-Sync
-export { syncFromBox as syncFromStorage, schedulePush, retryFailedSyncs, startPolling, stopPolling } from './box.js';
+export { syncFromBox as syncFromStorage, schedulePush, retryFailedSyncs, startPolling, stopPolling, loadPrefs, savePrefs, schedulePrefs } from './box.js';
 
 // Export/Import-Funktionen werden immer aus local.js bereitgestellt (unabhängig vom Backend)
 export { exportToFile, importFromFile } from './local.js';
