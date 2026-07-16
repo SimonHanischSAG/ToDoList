@@ -10,7 +10,8 @@
 import { browser } from '$app/environment';
 
 // ── Konfiguration ──────────────────────────────────────────────────────────
-const CLIENT_ID = import.meta.env.VITE_BOX_CLIENT_ID ?? '9v6ak3n6fh46a3c6djkz7g4vwrltvem6';
+const CLIENT_ID     = import.meta.env.VITE_BOX_CLIENT_ID     ?? '9v6ak3n6fh46a3c6djkz7g4vwrltvem6';
+const CLIENT_SECRET = import.meta.env.VITE_BOX_CLIENT_SECRET ?? '';
 const REDIRECT_URI = browser
 	? window.location.origin + window.location.pathname.replace(/\/$/, '') + '/'
 	: 'https://simonhanischsag.github.io/ToDoList/';
@@ -91,11 +92,12 @@ export async function handleRedirect() {
 	sessionStorage.removeItem(STORAGE_KEY_VERIFIER);
 
 	const body = new URLSearchParams({
-		grant_type:    'authorization_code',
-		client_id:     CLIENT_ID,
+		grant_type:     'authorization_code',
+		client_id:      CLIENT_ID,
+		client_secret:  CLIENT_SECRET,
 		code,
-		code_verifier: verifier,
-		redirect_uri:  REDIRECT_URI
+		code_verifier:  verifier,
+		redirect_uri:   REDIRECT_URI
 	});
 
 	const res = await fetch(BOX_TOKEN_URL, {
