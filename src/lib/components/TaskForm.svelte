@@ -30,6 +30,7 @@
 
 	let title       = $state(t?.title       ?? '');
 	let description = $state(t?.description ?? '');
+	let comments    = $state(t?.comments    ?? '');
 	let priority    = $state(/** @type {import('$lib/model/task.js').TaskPriority} */ (t?.priority ?? 'normal'));
 	let area        = $state(t?.area        ?? tasks.activeArea ?? '');
 	let topic       = $state(t?.topic       ?? '');
@@ -86,24 +87,26 @@
 		saving = true;
 		try {
 			if (isEdit && t) {
-				await updateTask(t.id, {
-					title:       title.trim(),
-					description: description.trim(),
-					priority,
-					area:        area.trim(),
-					topic:       topic.trim(),
-					dueDate:     dueDate || null
-				});
-			} else {
-				await addTask({
-					title:       title.trim(),
-					description: description.trim(),
-					priority,
-					area:        area.trim(),
-					topic:       topic.trim(),
-					dueDate:     dueDate || null
-				});
-			}
+					await updateTask(t.id, {
+						title:       title.trim(),
+						description: description.trim(),
+						comments:    comments.trim(),
+						priority,
+						area:        area.trim(),
+						topic:       topic.trim(),
+						dueDate:     dueDate || null
+					});
+				} else {
+					await addTask({
+						title:       title.trim(),
+						description: description.trim(),
+						comments:    comments.trim(),
+						priority,
+						area:        area.trim(),
+						topic:       topic.trim(),
+						dueDate:     dueDate || null
+					});
+				}
 			onclose();
 		} finally {
 			saving = false;
@@ -147,7 +150,13 @@
 					<label class="block text-xs font-semibold text-ibm-text-muted mb-1">Details (optional)</label>
 					<RichTextEditor bind:value={description} tabindex={2} />
 				</div>
-		
+	
+				<!-- Comments: tabindex 3 (im RichTextEditor) -->
+				<div>
+					<label class="block text-xs font-semibold text-ibm-text-muted mb-1">Comments (optional)</label>
+					<RichTextEditor bind:value={comments} tabindex={3} placeholder="Internal notes, follow-ups, context..." />
+				</div>
+	
 				<!-- Priority + Area (2 columns) -->
 				<div class="grid grid-cols-2 gap-3">
 					<div>
@@ -155,7 +164,7 @@
 						<select
 							id="task-prio"
 							bind:value={priority}
-							tabindex="3"
+							tabindex="4"
 							class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue bg-white"
 						>
 							<option value="urgent">🔴 Critical</option>
@@ -172,7 +181,7 @@
 							type="text"
 							bind:value={area}
 							list="area-suggestions"
-							tabindex="4"
+							tabindex="5"
 							class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
 						/>
 						<datalist id="area-suggestions">
@@ -190,7 +199,7 @@
 							type="text"
 							bind:value={topic}
 							list="topic-suggestions"
-							tabindex="5"
+							tabindex="6"
 							class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
 						/>
 						<datalist id="topic-suggestions">
@@ -219,10 +228,10 @@
 					</div>
 				</div>
 		
-				<!-- Speichern: tabindex 6 -->
+				<!-- Speichern: tabindex 7 -->
 				<button
 					type="submit"
-					tabindex="6"
+					tabindex="7"
 					disabled={saving || !title.trim()}
 					title="Speichern (Ctrl+S)"
 					class="relative group w-full bg-ibm-blue hover:bg-ibm-blue-dark disabled:opacity-50 text-white font-semibold py-2.5 rounded-md text-sm transition-colors"

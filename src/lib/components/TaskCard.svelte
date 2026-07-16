@@ -130,8 +130,8 @@
 						<span class="text-xs text-ibm-text-muted ml-auto">Score: {task.score}</span>
 					</div>
 
-				<!-- Expanded: Beschreibung + Tags + Blockiert-durch -->
-				{#if expanded && (task.description || task.tags.length > 0 || task.blockedBy.length > 0 || task.dueDate)}
+				<!-- Expanded: Beschreibung + Comments + Tags + Blockiert-durch -->
+				{#if expanded && (task.description || task.comments || task.tags.length > 0 || task.blockedBy.length > 0 || task.dueDate)}
 					<div class="mt-2 pt-2 border-t border-ibm-gray-dark space-y-1.5">
 						{#if verbose && task.dueDate}
 							<p class="text-xs text-ibm-text-muted">
@@ -142,6 +142,12 @@
 							<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 							<div class="text-xs text-ibm-text-muted leading-relaxed rich-content">
 								{@html task.description}
+							</div>
+						{/if}
+						{#if task.comments}
+							<div class="text-xs text-ibm-text-muted leading-relaxed rich-content border-l-2 border-ibm-gray-dark pl-2">
+								<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+								{@html task.comments}
 							</div>
 						{/if}
 						{#if task.tags.length > 0}
@@ -160,7 +166,7 @@
 
 			<!-- Aktionen: Details + Löschen -->
 				<div class="flex items-center gap-1 flex-shrink-0">
-					{#if !verbose && (task.description || task.tags.length > 0)}
+					{#if !verbose && (task.description || task.comments || task.tags.length > 0)}
 						<button
 							onclick={(e) => { e.stopPropagation(); _expanded = !_expanded; }}
 							class="text-ibm-text-muted hover:text-ibm-text transition-colors p-1 text-xs"

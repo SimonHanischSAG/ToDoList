@@ -11,6 +11,7 @@
 * @property {string}       id          - UUID v4
 * @property {string}       title       - Kurzer Titel (erste Zeile des ToDo)
 * @property {string}       description - Mehrzeilige Beschreibung / Details
+* @property {string}       comments    - Interne Kommentare / Notizen
 * @property {TaskStatus}   status
 * @property {TaskPriority} priority
 * @property {string}       area        - Umfeld (z.B. "MFT", "SelfEdi")
@@ -34,6 +35,7 @@ export function createTask(overrides = {}) {
 		id: crypto.randomUUID(),
 		title: '',
 		description: '',
+		comments: '',
 		status: 'open',
 		priority: 'normal',
 		area: '',
@@ -58,6 +60,7 @@ export function normalizeTask(raw) {
 		id: typeof raw.id === 'string' ? raw.id : crypto.randomUUID(),
 		title: String(raw.title ?? raw.ToDo ?? '').split('\n')[0].slice(0, 200),
 		description: String(raw.description ?? raw.ToDo ?? ''),
+		comments: String(raw.comments ?? ''),
 		status: mapStatus(raw.status ?? raw.Status),
 		priority: mapPriority(raw.priority ?? raw.Prio),
 		area:  String(raw.area  ?? raw.Umfeld ?? ''),
