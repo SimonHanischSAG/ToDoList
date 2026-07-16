@@ -17,6 +17,7 @@
 	import OrderedList from '@tiptap/extension-ordered-list';
 	import ListItem    from '@tiptap/extension-list-item';
 	import History     from '@tiptap/extension-history';
+	import { sinkListItem, liftListItem } from 'prosemirror-schema-list';
 
 	/** @type {{ value: string, placeholder?: string, tabindex?: number }} */
 	let { value = $bindable(''), placeholder = 'Additional details, context, links...', tabindex = 0 } = $props();
@@ -38,14 +39,30 @@
 			},
 			editorProps: {
 				handleKeyDown(view, event) {
-					// Tab → fokus auf nächstes Formularfeld weitergeben
-					if (event.key === 'Tab' && !event.shiftKey) {
-						event.preventDefault();
-						const next = document.querySelector(`[tabindex="${tabindex + 1}"]`);
-						if (next) /** @type {HTMLElement} */ (next).focus();
-						return true;
+					if (event.key !== 'Tab') return false;
+
+					const inList = editor.isActive('listItem');
+
+					if (event.shiftKey) {
+						if (inList) {
+							// Shift+Tab in Liste → ausrücken
+							event.preventDefault();
+							return liftListItem(view.state.schema.nodes.listItem)(view.state, view.dispatch);
+						}
+						return false;
 					}
-					return false;
+
+					if (inList) {
+						// Tab in Liste → einrücken
+						event.preventDefault();
+						return sinkListItem(view.state.schema.nodes.listItem)(view.state, view.dispatch);
+					}
+
+					// Tab außerhalb Liste → nächstes Formularfeld
+					event.preventDefault();
+					const next = document.querySelector(`[tabindex="${tabindex + 1}"]`);
+					if (next) /** @type {HTMLElement} */ (next).focus();
+					return true;
 				}
 			}
 		});
