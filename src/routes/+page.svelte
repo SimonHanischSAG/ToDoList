@@ -17,8 +17,8 @@
 	onMount(() => {
 		if (!browser) return;
 		function handleKey(e) {
-			// Ctrl+N – neuen Task öffnen (nur wenn kein Modal offen und kein Input fokussiert)
-			if (e.ctrlKey && e.key === 'n' && !showForm) {
+			// Ctrl+Y – neuen Task öffnen (nur wenn kein Modal offen und kein Input fokussiert)
+			if (e.ctrlKey && e.key === 'y' && !showForm) {
 				const tag = document.activeElement?.tagName;
 				if (tag !== 'INPUT' && tag !== 'TEXTAREA' && !document.activeElement?.closest('[contenteditable]')) {
 					e.preventDefault();
@@ -65,9 +65,13 @@
 		</button>
 		<button
 			onclick={() => showForm = true}
-			class="bg-white border border-ibm-gray-dark text-ibm-text text-sm font-semibold py-2 px-4 rounded-md hover:bg-ibm-gray transition-colors"
+			title="Neuen Task erstellen (Ctrl+Y)"
+			class="relative group bg-white border border-ibm-gray-dark text-ibm-text text-sm font-semibold py-2 px-4 rounded-md hover:bg-ibm-gray transition-colors"
 		>
 			+ New
+			<span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-0.5 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity">
+				Ctrl+Y
+			</span>
 		</button>
 	</div>
 

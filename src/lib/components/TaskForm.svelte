@@ -224,9 +224,13 @@
 					type="submit"
 					tabindex="6"
 					disabled={saving || !title.trim()}
-					class="w-full bg-ibm-blue hover:bg-ibm-blue-dark disabled:opacity-50 text-white font-semibold py-2.5 rounded-md text-sm transition-colors"
+					title="Speichern (Ctrl+S)"
+					class="relative group w-full bg-ibm-blue hover:bg-ibm-blue-dark disabled:opacity-50 text-white font-semibold py-2.5 rounded-md text-sm transition-colors"
 				>
 					{saving ? 'Saving...' : isEdit ? 'Save changes' : 'Save task'}
+					<span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-0.5 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity">
+						Ctrl+S
+					</span>
 				</button>
 			</form>
 	</div>
