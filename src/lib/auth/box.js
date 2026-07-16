@@ -115,6 +115,9 @@ export async function handleRedirect() {
 	// Token in localStorage speichern – bleibt über Reloads/Tab-Schließen erhalten
 	localStorage.setItem(STORAGE_KEY_TOKEN, data.access_token);
 
+	// Lokalen Task-Cache leeren – Box ist die führende Quelle
+	localStorage.removeItem('ibmtodo_local');
+
 	// Nutzername aus dem Token-Response direkt lesen (kein extra API-Call nötig)
 	const userName = data.token_extra_info?.name ?? null;
 	if (userName) {
