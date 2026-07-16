@@ -13,5 +13,8 @@
 // Aktives Backend: Box Cloud-Sync
 export { syncFromBox as syncFromStorage, schedulePush, retryFailedSyncs } from './box.js';
 
+// Export/Import-Funktionen werden immer aus local.js bereitgestellt (unabhängig vom Backend)
+export { exportToFile, importFromFile } from './local.js';
+
 // Lokaler Storage (Fallback, kein Login, kein Cloud-Sync):
 // export { syncFromLocal as syncFromStorage, schedulePush, retryFailedSyncs, exportToFile, importFromFile } from './local.js';
