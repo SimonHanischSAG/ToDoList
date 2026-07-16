@@ -8,7 +8,7 @@
  * Schreibzugriffe werden sofort lokal angewendet und debounced nach Box synchronisiert.
  */
 
-import { getToken } from '../auth/box.js';
+import { getToken, logout } from '../auth/box.js';
 import { db } from './db.js';
 
 const BOX_API = 'https://api.box.com/2.0';
@@ -34,13 +34,19 @@ let fileId   = null;
 async function boxFetch(url, options = {}) {
 	const token = getToken();
 	if (!token) throw new Error('Nicht eingeloggt');
-	return fetch(url, {
+	const res = await fetch(url, {
 		...options,
 		headers: {
 			Authorization: `Bearer ${token}`,
 			...(options.headers ?? {})
 		}
 	});
+	// 401 → Token abgelaufen, Nutzer ausloggen damit er sich neu einloggen kann
+	if (res.status === 401) {
+		logout();
+		throw new Error('SESSION_EXPIRED');
+	}
+	return res;
 }
 
 /**

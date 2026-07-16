@@ -158,7 +158,11 @@ export async function initialSync() {
 		await syncFromStorage();
 		await loadTasks();
 	} catch (err) {
-		_error = `Sync-Fehler: ${err}`;
+		if (String(err).includes('SESSION_EXPIRED')) {
+			_error = 'Sitzung abgelaufen – bitte neu einloggen.';
+		} else {
+			_error = `Sync-Fehler: ${err}`;
+		}
 	} finally {
 		_syncing = false;
 	}
