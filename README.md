@@ -176,12 +176,60 @@ Alle Tasks werden als `todos.json` im Box-Account des Nutzers gespeichert
 ## Score-Formel
 
 ```
-score = basePrio (urgent=80, high=60, normal=40, low=20)
-      + deadlineBoost   (bis +25 bei überfälligen Tasks)
-      + dependencyBoost (bis +15 wenn andere Tasks darauf warten)
-      + agingBoost      (bis +20 bei alten Tasks)
-      - blockedPenalty  (-30 wenn ich selbst blockiert bin)
+score = basePrio
+      + deadlineBoost    (je näher/überfälliger, desto mehr)
+      + dependencyBoost  (wenn andere Tasks auf diesen warten)
+      +/- agingEffect    (abhängig von Prio-Stufe, basiert auf updatedAt)
+      - blockedPenalty   (wenn selbst blockiert)
 ```
+
+### Basis-Scores (7 Stufen)
+
+| Prio        | Basis-Score |
+|-------------|-------------|
+| critical    | 90          |
+| high        | 75          |
+| medium-high | 60          |
+| normal      | 45          |
+| low         | 30          |
+| verylow     | 15          |
+| someday     |  5          |
+
+### Deadline-Boost (alle Prio-Stufen gleich)
+
+| Fälligkeit  | Boost |
+|-------------|-------|
+| Überfällig  | +25   |
+| ≤ 3 Tage    | +20   |
+| ≤ 7 Tage    | +10   |
+| ≤ 14 Tage   | +5    |
+| > 14 Tage   |  0    |
+
+Ein `normal`-Task (45) der morgen fällig ist erreicht Score **65** und landet damit zwischen `high` (75) und `medium-high` (60) – obwohl er nominell niedriger eingestuft ist.
+
+### Dependency-Boost
+
++5 pro wartendem Task, max. **+15**.
+
+### Aging-Effekt (basiert auf `updatedAt`)
+
+| Prio-Stufe                                        | Effekt                                           |
+|---------------------------------------------------|--------------------------------------------------|
+| `critical`, `high`                                | Boost: +1 pro 4 Wochen, max. **+10**             |
+| `medium-high`, `normal`, `low`, `verylow`, `someday` | Penalty: −10 nach 3 Mon., −20 nach 6 Mon. (Max.) |
+
+Bearbeiten eines Tasks (Speichern) setzt `updatedAt` zurück → Penalty-Lauf startet neu.
+Maximum: **−20 Punkte** (= 2 Prio-Stufen), danach kein weiterer Abfall.
+
+### Blocked-Penalty
+
+−30 wenn mindestens ein offener Blocker-Task vorhanden ist.
+
+### Score-Filter (Slider)
+
+In der App gibt es einen Score-Slider (0–90). Er filtert direkt auf den berechneten Score –
+Aging ist damit automatisch berücksichtigt: ein 6 Monate alter `medium-high`-Task (Score ~40)
+verschwindet beim Slider-Wert 45, obwohl seine nominelle Prio höher ist als `normal`.
 
 ---
 

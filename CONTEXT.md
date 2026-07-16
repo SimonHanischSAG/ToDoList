@@ -98,28 +98,72 @@ src/
 Task {
   id:          string        // UUID v4
   title:       string        // Kurztitel
-  description: string        // Details / Kommentar
+  description: string        // Details (Rich Text HTML)
+  comments:    string        // Interne Notizen (Rich Text HTML)
   status:      'open' | 'done' | 'optional' | 'archived'
-  priority:    'urgent' | 'high' | 'normal' | 'low'
+  priority:    'critical' | 'high' | 'medium-high' | 'normal' | 'low' | 'verylow' | 'someday'
   area:        string        // Umfeld (z.B. "MFT", "SelfEdi")
   topic:       string        // Thema (z.B. "Review", "Deployment")
   tags:        string[]
   blockedBy:   string[]      // IDs von blockierenden Tasks
   dueDate:     string|null   // "YYYY-MM-DD"
   createdAt:   string        // ISO 8601
-  updatedAt:   string        // ISO 8601
+  updatedAt:   string        // ISO 8601 – Basis für Aging-Penalty
   score:       number        // 0–100, berechnet, read-only
 }
 ```
 
-### Score-Formel
+### Score-Formel (`src/lib/engine/priority.js`)
+
 ```
-score = basePrio (urgent=80, high=60, normal=40, low=20)
-      + deadlineBoost   (bis +25 bei überfälligen Tasks)
-      + dependencyBoost (bis +15 wenn andere Tasks darauf warten)
-      + agingBoost      (bis +20 bei alten offenen Tasks)
-      - blockedPenalty  (-30 wenn selbst blockiert)
+score = basePrio
+      + deadlineBoost    (je näher/überfälliger, desto mehr)
+      + dependencyBoost  (wenn andere Tasks auf diesen warten)
+      +/- agingEffect    (abhängig von Prio-Stufe, basiert auf updatedAt)
+      - blockedPenalty   (wenn selbst blockiert)
 ```
+
+#### Basis-Scores der 7 Prio-Stufen
+
+| Prio        | Basis-Score |
+|-------------|-------------|
+| critical    | 90          |
+| high        | 75          |
+| medium-high | 60          |
+| normal      | 45          |
+| low         | 30          |
+| verylow     | 15          |
+| someday     |  5          |
+
+#### Deadline-Boost (gilt für alle Prio-Stufen gleich)
+
+| Fälligkeit          | Boost |
+|---------------------|-------|
+| Überfällig          | +25   |
+| ≤ 3 Tage            | +20   |
+| ≤ 7 Tage            | +10   |
+| ≤ 14 Tage           | +5    |
+| > 14 Tage           |  0    |
+
+Beispiel: `normal` (45) + überfällig (+25) = Score **70** → landet zwischen `high` (75) und `medium-high` (60).
+
+#### Dependency-Boost
+
++5 pro Task der auf diesen wartet, max. **+15**.
+
+#### Aging-Effekt (basiert auf `updatedAt`, nicht `createdAt`)
+
+| Prio-Stufe                           | Effekt                                                   |
+|--------------------------------------|----------------------------------------------------------|
+| critical, high                       | Kleiner Boost: +1 pro 4 Wochen, max. **+10**             |
+| medium-high, normal, low, verylow, someday | Penalty: −10 nach 3 Monaten, −20 nach 6 Monaten (Maximum) |
+
+→ Bearbeiten eines Tasks setzt `updatedAt` zurück und stoppt damit den Penalty-Lauf.
+→ Maximum −20 Punkte = maximal 2 Prio-Stufen Abfall, nie mehr.
+
+#### Blocked-Penalty
+
+−30 wenn mindestens ein offener Blocker-Task vorhanden ist.
 
 ---
 
