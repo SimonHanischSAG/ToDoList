@@ -13,6 +13,7 @@ import { createTask, normalizeTask } from '../model/task.js';
 let _tasks = $state(/** @type {import('../model/task.js').Task[]} */ ([]));
 let _activeAreas = $state(/** @type {string[]} */ ([]));
 let _activeTopics = $state(/** @type {string[]} */ ([]));
+let _hiddenPriorities = $state(/** @type {string[]} */ ([]));
 let _searchQuery = $state('');
 let _showDone = $state(false);
 let _loading = $state(false);
@@ -54,6 +55,18 @@ toggleTopic(topic) {
 	}
 },
 
+/** @returns {string[]} */
+get hiddenPriorities() { return _hiddenPriorities; },
+
+/** Priorität ein-/ausblenden */
+togglePriority(prio) {
+	if (_hiddenPriorities.includes(prio)) {
+		_hiddenPriorities = _hiddenPriorities.filter(p => p !== prio);
+	} else {
+		_hiddenPriorities = [..._hiddenPriorities, prio];
+	}
+},
+
 
 	get searchQuery() { return _searchQuery; },
 	set searchQuery(v) { _searchQuery = v; },
@@ -67,6 +80,7 @@ toggleTopic(topic) {
 		let result = _tasks.filter(t => t.status === 'open');
 		if (_activeAreas.length > 0) result = result.filter(t => _activeAreas.includes(t.area));
 		if (_activeTopics.length > 0) result = result.filter(t => _activeTopics.includes(t.topic));
+		if (_hiddenPriorities.length > 0) result = result.filter(t => !_hiddenPriorities.includes(t.priority));
 		if (_searchQuery.trim()) {
 			const q = _searchQuery.toLowerCase();
 			result = result.filter(t =>
@@ -84,6 +98,7 @@ toggleTopic(topic) {
 		let result = _tasks.filter(t => t.status === 'done');
 		if (_activeAreas.length > 0) result = result.filter(t => _activeAreas.includes(t.area));
 		if (_activeTopics.length > 0) result = result.filter(t => _activeTopics.includes(t.topic));
+		if (_hiddenPriorities.length > 0) result = result.filter(t => !_hiddenPriorities.includes(t.priority));
 		if (_searchQuery.trim()) {
 			const q = _searchQuery.toLowerCase();
 			result = result.filter(t =>
