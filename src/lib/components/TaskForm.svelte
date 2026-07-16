@@ -269,7 +269,7 @@
 		
 				<!-- Tags -->
 				<div>
-					<label class="block text-xs font-semibold text-ibm-text-muted mb-1">Tags (optional)</label>
+					<label class="block text-xs font-semibold text-ibm-text-muted mb-1" for="task-tags">Tags (optional)</label>
 					<!-- Hinzugefügte Tags als Pills -->
 					{#if tags.length > 0}
 						<div class="flex flex-wrap gap-1 mb-1.5">
