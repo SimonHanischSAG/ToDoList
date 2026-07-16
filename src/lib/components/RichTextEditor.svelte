@@ -42,8 +42,9 @@
 	onDestroy(() => editor?.destroy());
 
 	// Externe value-Aenderung (z.B. Reset) in den Editor spiegeln
+	// Nur wenn der Editor nicht fokussiert ist – sonst wird der Cursor zurückgesetzt
 	$effect(() => {
-		if (editor && !editor.isDestroyed) {
+		if (editor && !editor.isDestroyed && !editor.isFocused) {
 			const current = editor.getHTML();
 			const next = value || '';
 			if (current !== next && !(current === '<p></p>' && next === '')) {

@@ -99,7 +99,7 @@
 <dialog
 	class="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-4 m-0 w-full h-full max-w-none max-h-none border-0"
 	aria-label={isEdit ? 'Edit task' : 'New task'}
-	onclick={(e) => e.target === e.currentTarget && onclose()}
+	onmousedown={(e) => e.target === e.currentTarget && onclose()}
 	open
 >
 	<div class="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-2xl p-8 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
