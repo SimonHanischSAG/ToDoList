@@ -129,6 +129,7 @@
 		class="rich-editor px-3 py-2 text-sm min-h-[7rem] focus:outline-none"
 		data-placeholder={placeholder}
 		tabindex={tabindex}
+		onfocus={() => editor?.commands.focus()}
 	></div>
 </div>
 

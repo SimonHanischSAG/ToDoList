@@ -4,6 +4,7 @@
   Wird ohne task-Prop aufgerufen → Neu-Modus (leer)
 -->
 <script>
+	import { onMount } from 'svelte';
 	import { addTask, updateTask, tasks } from '$lib/stores/taskStore.svelte.js';
 	import RichTextEditor from './RichTextEditor.svelte';
 
@@ -17,6 +18,11 @@
 
 	/** @type {HTMLInputElement} */
 	let titleEl;
+
+	// Autofocus: programmatisch fokussieren – autofocus-Attribut funktioniert
+	// in <dialog>-Elementen nicht zuverlässig in allen Browsern
+	onMount(() => titleEl?.focus());
+
 
 	// task-Prop ist beim Öffnen fix → einmalige Initialisierung ist korrekt
 	const t      = task;
