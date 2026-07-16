@@ -7,7 +7,7 @@
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import { loadTasks, initialSync, stopSync, tasks } from '$lib/stores/taskStore.svelte.js';
-	import { exportToFile, importFromFile } from '$lib/storage/index.js';
+	import { exportToFile, importFromFile, schedulePush } from '$lib/storage/index.js';
 	import { login, handleRedirect, getToken, getUser, logout as boxLogout, startTokenRefreshTimer, refreshToken } from '$lib/auth/box.js';
 	import StoragePrompt from '$lib/components/StoragePrompt.svelte';
 
@@ -85,6 +85,7 @@
 		if (!file) return;
 		const count = await importFromFile(file);
 		await loadTasks();
+		schedulePush();
 		importMsg = `${count} Tasks importiert ✓`;
 		showImport = false;
 		setTimeout(() => importMsg = '', 3000);
