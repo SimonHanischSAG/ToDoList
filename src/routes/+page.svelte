@@ -2,6 +2,8 @@
   Haupt-Seite: Task-Liste mit Filter, Suche und Score-Anzeige
 -->
 <script>
+	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 	import { tasks, setStatus, deleteTask } from '$lib/stores/taskStore.svelte.js';
 	import TaskCard from '$lib/components/TaskCard.svelte';
 	import AreaFilter from '$lib/components/AreaFilter.svelte';
@@ -11,6 +13,22 @@
 	let showFocus   = $state(false);
 	let showVerbose = $state(false);
 	let showForm    = $state(false);
+
+	onMount(() => {
+		if (!browser) return;
+		function handleKey(e) {
+			// Ctrl+N – neuen Task öffnen (nur wenn kein Modal offen und kein Input fokussiert)
+			if (e.ctrlKey && e.key === 'n' && !showForm) {
+				const tag = document.activeElement?.tagName;
+				if (tag !== 'INPUT' && tag !== 'TEXTAREA' && !document.activeElement?.closest('[contenteditable]')) {
+					e.preventDefault();
+					showForm = true;
+				}
+			}
+		}
+		window.addEventListener('keydown', handleKey);
+		return () => window.removeEventListener('keydown', handleKey);
+	});
 </script>
 
 <div class="max-w-2xl mx-auto px-4 py-4">

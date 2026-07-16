@@ -15,6 +15,9 @@
 	 */
 	let { task = undefined, onclose } = $props();
 
+	/** @type {HTMLInputElement} */
+	let titleEl;
+
 	// task-Prop ist beim Öffnen fix → einmalige Initialisierung ist korrekt
 	const t      = task;
 	const isEdit = !!t;
@@ -64,6 +67,14 @@
 		}
 	];
 
+	/** Ctrl+S speichert aus jedem Feld heraus */
+	function handleKeydown(e) {
+		if (e.ctrlKey && e.key === 's') {
+			e.preventDefault();
+			handleSubmit();
+		}
+	}
+
 	async function handleSubmit() {
 		if (!title.trim()) return;
 		saving = true;
@@ -108,100 +119,109 @@
 				<button onclick={onclose} class="text-ibm-text-muted hover:text-ibm-text" aria-label="Close">✕</button>
 		</div>
 
-		<form onsubmit={handleSubmit} class="space-y-3">
-			<!-- Titel -->
-			<div>
-				<label class="block text-xs font-semibold text-ibm-text-muted mb-1" for="task-title">Title *</label>
+		<form onsubmit={handleSubmit} onkeydown={handleKeydown} class="space-y-3">
+				<!-- Titel: autofocus + tabindex 1 -->
+				<div>
+					<label class="block text-xs font-semibold text-ibm-text-muted mb-1" for="task-title">Title *</label>
 					<input
 						id="task-title"
 						type="text"
 						bind:value={title}
+						bind:this={titleEl}
 						placeholder="What needs to be done?"
-					required
-					class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
-				/>
-			</div>
-
-			<!-- Beschreibung -->
-			<div>
-				<label class="block text-xs font-semibold text-ibm-text-muted mb-1">Details (optional)</label>
-				<RichTextEditor bind:value={description} />
-			</div>
-
-			<!-- Priority + Area (2 columns) -->
+						required
+						tabindex="1"
+						autofocus
+						class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
+					/>
+				</div>
+		
+				<!-- Beschreibung: tabindex 2 (im RichTextEditor) -->
+				<div>
+					<label class="block text-xs font-semibold text-ibm-text-muted mb-1">Details (optional)</label>
+					<RichTextEditor bind:value={description} tabindex={2} />
+				</div>
+		
+				<!-- Priority + Area (2 columns) -->
 				<div class="grid grid-cols-2 gap-3">
 					<div>
 						<label class="block text-xs font-semibold text-ibm-text-muted mb-1" for="task-prio">Priority</label>
 						<select
 							id="task-prio"
 							bind:value={priority}
+							tabindex="3"
 							class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue bg-white"
 						>
 							<option value="urgent">🔴 Critical</option>
-								<option value="high">🟠 High</option>
-								<option value="normal">🔵 Normal</option>
-								<option value="low">⚪ Low</option>
-								<option value="verylow">🩶 Very Low</option>
+							<option value="high">🟠 High</option>
+							<option value="normal">🔵 Normal</option>
+							<option value="low">⚪ Low</option>
+							<option value="verylow">🩶 Very Low</option>
 						</select>
 					</div>
 					<div>
 						<label class="block text-xs font-semibold text-ibm-text-muted mb-1" for="task-area">Area</label>
-					<input
-						id="task-area"
-						type="text"
-						bind:value={area}
-						list="area-suggestions"
-						class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
-					/>
-					<datalist id="area-suggestions">
-						{#each tasks.areas as a}<option value={a}></option>{/each}
-					</datalist>
+						<input
+							id="task-area"
+							type="text"
+							bind:value={area}
+							list="area-suggestions"
+							tabindex="4"
+							class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
+						/>
+						<datalist id="area-suggestions">
+							{#each tasks.areas as a}<option value={a}></option>{/each}
+						</datalist>
+					</div>
 				</div>
-			</div>
-
-			<!-- Topic + Deadline (2 columns) -->
+		
+				<!-- Topic + Deadline (2 columns) -->
 				<div class="grid grid-cols-2 gap-3">
 					<div>
 						<label class="block text-xs font-semibold text-ibm-text-muted mb-1" for="task-topic">Topic</label>
-					<input
-						id="task-topic"
-						type="text"
-						bind:value={topic}
-						list="topic-suggestions"
-						class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
-					/>
-					<datalist id="topic-suggestions">
-						{#each tasks.topics as tp}<option value={tp}></option>{/each}
-					</datalist>
-				</div>
-				<div>
-					<label class="block text-xs font-semibold text-ibm-text-muted mb-1" for="task-due">Due date</label>
-					<input
-						id="task-due"
-						type="date"
-						bind:value={dueDate}
-						class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
-					/>
-					<div class="flex flex-wrap gap-1 mt-1.5">
-						{#each quickDates as qd}
-							<button
-								type="button"
-								onclick={() => (dueDate = qd.fn())}
-								class="text-xs px-2 py-0.5 rounded border border-ibm-gray-dark text-ibm-text-muted hover:border-ibm-blue hover:text-ibm-blue transition-colors"
-							>{qd.label}</button>
-						{/each}
+						<input
+							id="task-topic"
+							type="text"
+							bind:value={topic}
+							list="topic-suggestions"
+							tabindex="5"
+							class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
+						/>
+						<datalist id="topic-suggestions">
+							{#each tasks.topics as tp}<option value={tp}></option>{/each}
+						</datalist>
+					</div>
+					<div>
+						<label class="block text-xs font-semibold text-ibm-text-muted mb-1" for="task-due">Due date</label>
+						<input
+							id="task-due"
+							type="date"
+							bind:value={dueDate}
+							tabindex="-1"
+							class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
+						/>
+						<div class="flex flex-wrap gap-1 mt-1.5">
+							{#each quickDates as qd}
+								<button
+									type="button"
+									tabindex="-1"
+									onclick={() => (dueDate = qd.fn())}
+									class="text-xs px-2 py-0.5 rounded border border-ibm-gray-dark text-ibm-text-muted hover:border-ibm-blue hover:text-ibm-blue transition-colors"
+								>{qd.label}</button>
+							{/each}
+						</div>
 					</div>
 				</div>
-			</div>
-
-			<!-- Speichern -->
-			<button
-				type="submit"
-				disabled={saving || !title.trim()}
-				class="w-full bg-ibm-blue hover:bg-ibm-blue-dark disabled:opacity-50 text-white font-semibold py-2.5 rounded-md text-sm transition-colors"
-			>
-				{saving ? 'Saving...' : isEdit ? 'Save changes' : 'Save task'}
-			</button>
-		</form>
+		
+				<!-- Speichern: tabindex 6 -->
+				<button
+					type="submit"
+					tabindex="6"
+					disabled={saving || !title.trim()}
+					class="w-full bg-ibm-blue hover:bg-ibm-blue-dark disabled:opacity-50 text-white font-semibold py-2.5 rounded-md text-sm transition-colors"
+				>
+					{saving ? 'Saving...' : isEdit ? 'Save changes' : 'Save task'}
+				</button>
+			</form>
 	</div>
 </dialog>

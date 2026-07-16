@@ -18,8 +18,8 @@
 	import ListItem    from '@tiptap/extension-list-item';
 	import History     from '@tiptap/extension-history';
 
-	/** @type {{ value: string, placeholder?: string }} */
-	let { value = $bindable(''), placeholder = 'Additional details, context, links...' } = $props();
+	/** @type {{ value: string, placeholder?: string, tabindex?: number }} */
+	let { value = $bindable(''), placeholder = 'Additional details, context, links...', tabindex = 0 } = $props();
 
 	/** @type {HTMLDivElement} */
 	let editorEl;
@@ -35,6 +35,18 @@
 				const html = editor.getHTML();
 				// Leerer Editor -> leerer String
 				value = html === '<p></p>' ? '' : html;
+			},
+			editorProps: {
+				handleKeyDown(view, event) {
+					// Tab → fokus auf nächstes Formularfeld weitergeben
+					if (event.key === 'Tab' && !event.shiftKey) {
+						event.preventDefault();
+						const next = document.querySelector(`[tabindex="${tabindex + 1}"]`);
+						if (next) /** @type {HTMLElement} */ (next).focus();
+						return true;
+					}
+					return false;
+				}
 			}
 		});
 	});
@@ -116,6 +128,7 @@
 		bind:this={editorEl}
 		class="rich-editor px-3 py-2 text-sm min-h-[7rem] focus:outline-none"
 		data-placeholder={placeholder}
+		tabindex={tabindex}
 	></div>
 </div>
 
