@@ -117,7 +117,7 @@ export function rankTasks(tasks) {
 	const open = tasks.filter((t) => t.status === 'open');
 	return tasks
 		.map((task) => ({ ...task, score: calcScore(task, open) }))
-		.sort((a, b) => b.score - a.score);
+		.sort((a, b) => b.score - a.score || new Date(b.createdAt) - new Date(a.createdAt));
 }
 
 /**
@@ -132,7 +132,7 @@ export function getFocusTasks(tasks, { area = '', maxItems = 5 } = {}) {
 		.filter((t) => !area || t.area === area)
 		.filter((t) => !isBlocked(t, open))
 		.map((t) => ({ ...t, score: calcScore(t, open) }))
-		.sort((a, b) => b.score - a.score)
+		.sort((a, b) => b.score - a.score || new Date(b.createdAt) - new Date(a.createdAt))
 		.slice(0, maxItems);
 }
 
