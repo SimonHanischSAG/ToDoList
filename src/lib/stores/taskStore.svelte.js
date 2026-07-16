@@ -13,7 +13,7 @@ import { createTask, normalizeTask } from '../model/task.js';
 let _tasks = $state(/** @type {import('../model/task.js').Task[]} */ ([]));
 let _activeAreas = $state(/** @type {string[]} */ ([]));
 let _activeTopics = $state(/** @type {string[]} */ ([]));
-let _hiddenPriorities = $state(/** @type {string[]} */ ([]));
+let _minScore = $state(0);
 let _searchQuery = $state('');
 let _showDone = $state(false);
 let _loading = $state(false);
@@ -57,17 +57,9 @@ toggleTopic(topic) {
 	}
 },
 
-/** @returns {string[]} */
-get hiddenPriorities() { return _hiddenPriorities; },
-
-/** Priorität ein-/ausblenden */
-togglePriority(prio) {
-	if (_hiddenPriorities.includes(prio)) {
-		_hiddenPriorities = _hiddenPriorities.filter(p => p !== prio);
-	} else {
-		_hiddenPriorities = [..._hiddenPriorities, prio];
-	}
-},
+/** Score-Mindestgrenze für den Slider-Filter (0 = alles anzeigen) */
+get minScore() { return _minScore; },
+set minScore(v) { _minScore = v; },
 
 
 	get searchQuery() { return _searchQuery; },
@@ -83,7 +75,7 @@ togglePriority(prio) {
 		let result = _tasks.filter(t => t.status === 'open');
 		if (_activeAreas.length > 0) result = result.filter(t => _activeAreas.includes(t.area));
 		if (_activeTopics.length > 0) result = result.filter(t => _activeTopics.includes(t.topic));
-		if (_hiddenPriorities.length > 0) result = result.filter(t => !_hiddenPriorities.includes(t.priority));
+		if (_minScore > 0) result = result.filter(t => t.score >= _minScore);
 		if (_searchQuery.trim()) {
 			const q = _searchQuery.toLowerCase();
 			result = result.filter(t =>
@@ -101,7 +93,6 @@ togglePriority(prio) {
 		let result = _tasks.filter(t => t.status === 'done');
 		if (_activeAreas.length > 0) result = result.filter(t => _activeAreas.includes(t.area));
 		if (_activeTopics.length > 0) result = result.filter(t => _activeTopics.includes(t.topic));
-		if (_hiddenPriorities.length > 0) result = result.filter(t => !_hiddenPriorities.includes(t.priority));
 		if (_searchQuery.trim()) {
 			const q = _searchQuery.toLowerCase();
 			result = result.filter(t =>
