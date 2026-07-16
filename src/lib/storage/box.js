@@ -12,16 +12,44 @@ import { getToken, logout, refreshToken } from '../auth/box.js';
 import { db } from './db.js';
 
 const BOX_API = 'https://api.box.com/2.0';
-const FOLDER_NAME = 'IBMTodo';
-const FILE_NAME   = 'todos.json';
+const FOLDER_NAME   = 'IBMTodoStorage';
+const FILE_NAME     = 'todos.json';
+const README_NAME   = 'README.txt';
+const README_CONTENT = `IBMTodoStorage – Datenordner der IBM Todo App
+==============================================
+
+Dieser Ordner wird automatisch von der IBM Todo App angelegt und verwaltet:
+https://simonhanischsag.github.io/ToDoList/
+
+Inhalt
+------
+todos.json   Alle deine Aufgaben als JSON-Datei (UTF-8)
+README.txt   Diese Datei
+
+Was passiert, wenn du diesen Ordner oder todos.json löschst?
+-------------------------------------------------------------
+- Beim nächsten App-Start werden ALLE Aufgaben unwiderruflich gelöscht.
+- Die App legt den Ordner und eine leere todos.json neu an.
+- Ein Wiederherstellen ist nur möglich, wenn du vorher ein Backup
+  (Export als JSON über die App) angelegt hast.
+
+Backup / Restore
+----------------
+In der App (oben rechts) gibt es Export- und Import-Schaltflächen.
+Damit kannst du ein lokales Backup als JSON-Datei erstellen und
+bei Bedarf wiederherstellen.
+
+Bitte diesen Ordner NICHT umbenennen oder verschieben.
+`;
 
 // Debounce-Timer für den Upload
 let uploadTimer = null;
 const UPLOAD_DEBOUNCE_MS = 2000;
 
 // gecachte IDs um wiederholte Folder-Lookups zu vermeiden
-let folderId = null;
-let fileId   = null;
+let folderId   = null;
+let fileId     = null;
+let readmeId   = null;
 
 // ── Box API Helpers ────────────────────────────────────────────────────────
 
@@ -52,13 +80,13 @@ async function boxFetch(url, options = {}, _retry = true) {
 }
 
 /**
- * Sucht oder erstellt den IBMTodo-Ordner im Root des Nutzers.
+ * Sucht oder erstellt den IBMTodoStorage-Ordner im Root des Nutzers.
  * @returns {Promise<string>} Folder ID
  */
 async function getOrCreateFolder() {
 	if (folderId) return folderId;
 
-	// Root-Inhalt abrufen und nach IBMTodo-Ordner suchen
+	// Root-Inhalt abrufen und nach IBMTodoStorage-Ordner suchen
 	const res = await boxFetch(
 		`${BOX_API}/folders/0/items?fields=id,name,type&limit=100`
 	);
@@ -84,6 +112,42 @@ async function getOrCreateFolder() {
 	const folder = await createRes.json();
 	folderId = folder.id;
 	return folderId;
+}
+
+/**
+ * Legt README.txt im Ordner an, falls sie noch nicht existiert.
+ * @param {string} folder Folder ID
+ */
+async function ensureReadme(folder) {
+	if (readmeId) return;
+
+	// Ordnerinhalt prüfen
+	const res = await boxFetch(
+		`${BOX_API}/folders/${folder}/items?fields=id,name,type&limit=100`
+	);
+	if (!res.ok) return;
+	const data = await res.json();
+
+	const existing = data.entries?.find(
+		(e) => e.type === 'file' && e.name === README_NAME
+	);
+	if (existing) {
+		readmeId = existing.id;
+		return;
+	}
+
+	// README hochladen
+	const form = new FormData();
+	form.append('attributes', JSON.stringify({ name: README_NAME, parent: { id: folder } }));
+	form.append('file', new Blob([README_CONTENT], { type: 'text/plain' }), README_NAME);
+	const upload = await boxFetch('https://upload.box.com/api/2.0/files/content', {
+		method: 'POST',
+		body: form
+	});
+	if (upload.ok) {
+		const result = await upload.json();
+		readmeId = result.entries?.[0]?.id ?? null;
+	}
 }
 
 /**
@@ -142,6 +206,7 @@ export async function pushToBox() {
 	const tasks  = await db.tasks.toArray();
 	const body   = JSON.stringify(tasks, null, 2);
 	const folder = await getOrCreateFolder();
+	await ensureReadme(folder);
 	const id     = await findFile();
 
 	const formData = new FormData();
