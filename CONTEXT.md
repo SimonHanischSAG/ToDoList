@@ -54,9 +54,10 @@ export { syncFromBox as syncFromStorage, schedulePush, retryFailedSyncs } from '
 ```
 
 **Box-Setup:**
-- Client ID: `9v6ak3n6fh46a3c6djkz7g4vwrltvem6` (Test-App, öffentlich, kein Secret)
+- Client ID: `57mjnjrkdl2787qrsbcmk3zczhwa2en6` (produktiver Box-Account)
+- Client Secret: GitHub Secret `VITE_BOX_CLIENT_SECRET` (nicht im Code!)
 - Redirect URI: `https://simonhanischsag.github.io/ToDoList/`
-- IBM Box Admin-Freigabe: Ticket beim IBM IT Help Desk gestellt (Betreff: "Enable Box Developer App for watsonx Challenge project")
+- GitHub Secret `VITE_BOX_CLIENT_ID`: produktive Client ID
 
 ---
 

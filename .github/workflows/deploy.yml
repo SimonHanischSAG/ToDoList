@@ -35,7 +35,7 @@ jobs:
         env:
           # GitHub Pages deployt unter /ToDoList/ – SvelteKit braucht den base-Pfad
           BASE_PATH: /ToDoList
-          VITE_BOX_CLIENT_ID: ${{ secrets.VITE_BOX_CLIENT_ID || '9v6ak3n6fh46a3c6djkz7g4vwrltvem6' }}
+          VITE_BOX_CLIENT_ID: ${{ secrets.VITE_BOX_CLIENT_ID }}
           VITE_BOX_CLIENT_SECRET: ${{ secrets.VITE_BOX_CLIENT_SECRET }}
 
       - name: Upload artifact
