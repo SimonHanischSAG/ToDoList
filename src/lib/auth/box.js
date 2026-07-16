@@ -19,9 +19,13 @@ const REDIRECT_URI = browser
 const BOX_AUTH_URL = 'https://account.box.com/api/oauth2/authorize';
 const BOX_TOKEN_URL = 'https://api.box.com/oauth2/token';
 
-const STORAGE_KEY_TOKEN    = 'box_access_token';
+const STORAGE_KEY_TOKEN   = 'box_access_token';
+const STORAGE_KEY_REFRESH = 'box_refresh_token';
 const STORAGE_KEY_VERIFIER = 'box_pkce_verifier';
-const STORAGE_KEY_USER     = 'box_user';
+const STORAGE_KEY_USER    = 'box_user';
+
+// Laufender Refresh-Promise (verhindert parallele Refresh-Requests)
+let _refreshPromise = /** @type {Promise<boolean> | null} */ (null);
 
 // ── PKCE Helpers ───────────────────────────────────────────────────────────
 
@@ -112,17 +116,10 @@ export async function handleRedirect() {
 	}
 
 	const data = await res.json();
-	// Token in localStorage speichern – bleibt über Reloads/Tab-Schließen erhalten
-	localStorage.setItem(STORAGE_KEY_TOKEN, data.access_token);
+	saveTokens(data);
 
 	// Lokalen Task-Cache leeren – Box ist die führende Quelle
 	localStorage.removeItem('ibmtodo_local');
-
-	// Nutzername aus dem Token-Response direkt lesen (kein extra API-Call nötig)
-	const userName = data.token_extra_info?.name ?? null;
-	if (userName) {
-		localStorage.setItem(STORAGE_KEY_USER, JSON.stringify({ name: userName, login: '' }));
-	}
 
 	return true;
 }
@@ -134,6 +131,46 @@ export async function handleRedirect() {
 export function getToken() {
 	if (!browser) return null;
 	return localStorage.getItem(STORAGE_KEY_TOKEN);
+}
+
+/**
+ * Erneuert das Access Token still im Hintergrund via Refresh Token.
+ * @returns {Promise<boolean>} true wenn erfolgreich
+ */
+export async function refreshToken() {
+	if (!browser) return false;
+
+	// Parallele Refresh-Requests verhindern
+	if (_refreshPromise) return _refreshPromise;
+
+	const refresh = localStorage.getItem(STORAGE_KEY_REFRESH);
+	if (!refresh) return false;
+
+	_refreshPromise = (async () => {
+		try {
+			const body = new URLSearchParams({
+				grant_type:    'refresh_token',
+				client_id:     CLIENT_ID,
+				client_secret: CLIENT_SECRET,
+				refresh_token: refresh
+			});
+			const res = await fetch(BOX_TOKEN_URL, {
+				method:  'POST',
+				headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+				body
+			});
+			if (!res.ok) return false;
+			const data = await res.json();
+			saveTokens(data);
+			return true;
+		} catch {
+			return false;
+		} finally {
+			_refreshPromise = null;
+		}
+	})();
+
+	return _refreshPromise;
 }
 
 /**
@@ -151,8 +188,22 @@ export function getUser() {
  */
 export function logout() {
 	localStorage.removeItem(STORAGE_KEY_TOKEN);
+	localStorage.removeItem(STORAGE_KEY_REFRESH);
 	localStorage.removeItem(STORAGE_KEY_USER);
 	// Box hat keine Server-seitige Logout-URL für SPAs
 	window.location.reload();
+}
+
+// ── Interne Helpers ────────────────────────────────────────────────────────
+
+/**
+ * Speichert Access + Refresh Token aus einer Token-Response.
+ * @param {Record<string, string>} data
+ */
+function saveTokens(data) {
+	if (data.access_token)  localStorage.setItem(STORAGE_KEY_TOKEN,   data.access_token);
+	if (data.refresh_token) localStorage.setItem(STORAGE_KEY_REFRESH, data.refresh_token);
+	const userName = data.token_extra_info?.name ?? null;
+	if (userName) localStorage.setItem(STORAGE_KEY_USER, JSON.stringify({ name: userName, login: '' }));
 }
 
