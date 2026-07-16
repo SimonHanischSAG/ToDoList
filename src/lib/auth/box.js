@@ -10,7 +10,7 @@
 import { browser } from '$app/environment';
 
 // ── Konfiguration ──────────────────────────────────────────────────────────
-const CLIENT_ID = import.meta.env.VITE_BOX_CLIENT_ID ?? '57mjnjrkdl2787qrsbcmk3zczhwa2en6';
+const CLIENT_ID = import.meta.env.VITE_BOX_CLIENT_ID ?? '9v6ak3n6fh46a3c6djkz7g4vwrltvem6';
 const REDIRECT_URI = browser
 	? window.location.origin + window.location.pathname.replace(/\/$/, '') + '/'
 	: 'https://simonhanischsag.github.io/ToDoList/';

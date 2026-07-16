@@ -41,20 +41,20 @@ Kein Backend, kein zentraler Server, keine Datenbank. Jeder Nutzer speichert sei
 
 ## Storage-Modus umschalten
 
-Aktuell aktiv: **Lokaler Storage** (kein Login, Daten im Browser).
+Aktuell aktiv: **Box Cloud-Sync** (IBM Box OAuth 2.0 PKCE).
 
 Datei: [`src/lib/storage/index.js`](src/lib/storage/index.js)
 
 ```js
-// Lokal (aktuell aktiv):
-export { syncFromLocal as syncFromStorage, schedulePush, retryFailedSyncs, exportToFile, importFromFile } from './local.js';
+// Box Cloud-Sync (aktuell aktiv):
+export { syncFromBox as syncFromStorage, schedulePush, retryFailedSyncs } from './box.js';
 
-// Box Cloud-Sync (aktivieren sobald IBM-Freigabe vorliegt):
-// export { syncFromBox as syncFromStorage, schedulePush, retryFailedSyncs } from './box.js';
+// Lokal (Fallback, kein Login):
+// export { syncFromLocal as syncFromStorage, schedulePush, retryFailedSyncs, exportToFile, importFromFile } from './local.js';
 ```
 
 **Box-Setup:**
-- Client ID: `57mjnjrkdl2787qrsbcmk3zczhwa2en6` (öffentlich, kein Secret)
+- Client ID: `9v6ak3n6fh46a3c6djkz7g4vwrltvem6` (Test-App, öffentlich, kein Secret)
 - Redirect URI: `https://simonhanischsag.github.io/ToDoList/`
 - IBM Box Admin-Freigabe: Ticket beim IBM IT Help Desk gestellt (Betreff: "Enable Box Developer App for watsonx Challenge project")
 
