@@ -176,7 +176,7 @@ export const tasks = {
 
 	/** Alle einzigartigen Tags über alle Tasks (alphabetisch sortiert) */
 	get allTags() {
-		const set = new Set(_tasks.flatMap(t => t.tags));
+		const set = new Set(_tasks.flatMap(t => t.tags ?? []));
 		return [...set].sort();
 	},
 

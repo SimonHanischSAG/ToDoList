@@ -35,7 +35,7 @@
 	let area        = $state(t?.area        ?? tasks.activeArea ?? '');
 	let topic       = $state(t?.topic       ?? '');
 	let dueDate     = $state(t?.dueDate     ?? '');
-	let tags        = $state(/** @type {string[]} */ ([...(t?.tags ?? [])]));
+	let tags        = $state(/** @type {string[]} */ ([...(Array.isArray(t?.tags) ? t.tags : [])]));
 	let tagInput    = $state('');
 	let saving      = $state(false);
 
