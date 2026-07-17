@@ -127,7 +127,7 @@
 						priority,
 						area:        area.trim(),
 						topic:       topic.trim(),
-						tags,
+						tags:        [...tags],
 						dueDate:     dueDate || null
 					});
 					if (markAsDone) {
@@ -141,7 +141,7 @@
 						priority,
 						area:        area.trim(),
 						topic:       topic.trim(),
-						tags,
+						tags:        [...tags],
 						dueDate:     dueDate || null
 					});
 				}
