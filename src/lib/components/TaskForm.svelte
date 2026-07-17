@@ -114,7 +114,8 @@
 		}
 	}
 
-	async function handleSubmit() {
+	async function handleSubmit(e) {
+		e?.preventDefault();
 		if (!title.trim()) return;
 		saving = true;
 		try {
