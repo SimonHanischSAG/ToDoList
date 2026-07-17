@@ -68,11 +68,6 @@
 	const isOverdue = $derived(!!task.dueDate && new Date(task.dueDate) < new Date());
 </script>
 
-<!-- Edit-Modal -->
-{#if editing}
-	<TaskForm task={task} onclose={() => editing = false} />
-{/if}
-
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 <div
 	class="border border-ibm-gray-dark rounded-md overflow-hidden hover:shadow-sm transition-shadow cursor-pointer {done ? 'bg-gray-50 opacity-70' : 'bg-white'}"
@@ -107,7 +102,7 @@
 				<!-- Meta-Zeile -->
 					<div class="flex flex-wrap items-center gap-1.5 mt-1.5">
 						<!-- Priorität + Pfeile -->
-						<span class="text-xs border px-2 py-0.5 rounded inline-block text-center w-16 {PRIORITY_COLORS[task.priority]}">
+						<span class="text-xs border px-2 py-0.5 rounded inline-block text-center w-20 whitespace-nowrap {PRIORITY_COLORS[task.priority]}">
 							{PRIORITY_LABELS[task.priority]}
 						</span>
 						<div class="flex flex-row gap-0.5">
@@ -194,3 +189,8 @@
 		</div>
 	</div>
 </div>
+
+<!-- Edit-Modal außerhalb der klickbaren Card, damit der Save-Klick nicht durchbubbelt -->
+{#if editing}
+	<TaskForm task={task} onclose={() => editing = false} />
+{/if}
