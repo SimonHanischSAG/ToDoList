@@ -215,7 +215,7 @@ export async function loadTasks() {
 		const rows = await db.tasks.toArray();
 		_tasks = rankTasks(rows);
 	} catch (err) {
-		_error = `Fehler beim Laden: ${err}`;
+		_error = `Load error: ${err}`;
 	} finally {
 		_loading = false;
 	}
@@ -247,11 +247,21 @@ export async function initialSync() {
 			_lastSync = new Date().toISOString();
 		});
 	} catch (err) {
-		if (String(err).includes('SESSION_EXPIRED')) {
+		const msg = String(err);
+		// SESSION_EXPIRED wird von boxFetch geworfen wenn 401 + kein Refresh möglich.
+		// "Load failed" / "Failed to fetch" / "NetworkError" tritt auf iOS auf wenn
+		// der Token abgelaufen ist und der Browser den Request blockiert.
+		const isAuthError =
+			msg.includes('SESSION_EXPIRED') ||
+			msg.includes('Load failed') ||
+			msg.includes('Failed to fetch') ||
+			msg.includes('NetworkError') ||
+			msg.includes('Nicht eingeloggt');
+		if (isAuthError) {
 			_sessionExpired = true;
 			_error = null;
 		} else {
-			_error = `Sync-Fehler: ${err}`;
+			_error = `Sync error: ${err}`;
 		}
 	} finally {
 		_syncing = false;

@@ -43,12 +43,12 @@
 
 	{#if tasks.sessionExpired}
 		<div class="bg-amber-50 border border-amber-300 text-amber-900 text-sm px-4 py-3 rounded mb-3 flex items-center justify-between gap-3">
-			<span>⚠ Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.</span>
+			<span>⚠ Your session has expired. Please sign in again.</span>
 			<button
 				onclick={login}
 				class="shrink-0 bg-ibm-blue hover:bg-ibm-blue-dark text-white text-xs font-semibold px-3 py-1.5 rounded transition-colors"
 			>
-				Neu anmelden
+				Sign in
 			</button>
 		</div>
 	{:else if tasks.error}
