@@ -140,17 +140,15 @@
 								⏰ {deadline}
 							</span>
 						{/if}
-						<!-- Tags in Kompakt-Ansicht (nur wenn nicht bereits expanded) -->
-						{#if !expanded && task.tags.length > 0}
-							{#each task.tags as tag}
-								<span class="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">#{tag}</span>
-							{/each}
-						{/if}
+						<!-- Tags always in meta row -->
+						{#each task.tags as tag}
+							<span class="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">#{tag}</span>
+						{/each}
 						<span class="text-xs text-ibm-text-muted ml-auto">Score: {task.score}</span>
 					</div>
 
-				<!-- Expanded: Beschreibung + Comments + Tags + Blockiert-durch -->
-				{#if expanded && (task.description || task.comments || task.tags.length > 0 || task.blockedBy.length > 0 || task.dueDate)}
+				<!-- Expanded: description + comments + blocked-by -->
+				{#if expanded && (task.description || task.comments || task.blockedBy.length > 0 || task.dueDate)}
 					<div class="mt-2 pt-2 border-t border-ibm-gray-dark space-y-1.5">
 						{#if verbose && task.dueDate}
 							<p class="text-xs text-ibm-text-muted">
@@ -169,13 +167,6 @@
 								{@html task.comments}
 							</div>
 						{/if}
-						{#if task.tags.length > 0}
-							<div class="flex flex-wrap gap-1">
-								{#each task.tags as tag}
-									<span class="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">#{tag}</span>
-								{/each}
-							</div>
-						{/if}
 						{#if task.blockedBy.length > 0}
 							<p class="text-xs text-red-600">🔒 Blocked by {task.blockedBy.length} task(s)</p>
 						{/if}
@@ -185,7 +176,7 @@
 
 			<!-- Actions: details + delete -->
 				<div class="flex items-center gap-1 flex-shrink-0">
-					{#if !verbose && (task.description || task.comments || task.tags.length > 0)}
+					{#if !verbose && (task.description || task.comments || task.blockedBy.length > 0 || task.dueDate)}
 						<button
 							onclick={(e) => { e.stopPropagation(); _expanded = !_expanded; }}
 							class="text-ibm-text-muted hover:text-ibm-text transition-colors p-1 text-xs"
