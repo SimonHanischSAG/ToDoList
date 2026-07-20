@@ -200,12 +200,11 @@
 		</div>
 	</div>
 
-	<!-- Aging-Hinweis -->
-	{#if agingHint(tasks.minScore)}
-		<p class="text-[10px] text-orange-500 mt-0.5 leading-tight">
-			⏱{agingHint(tasks.minScore)}
-		</p>
-	{/if}
+	<!-- Aging-Hinweis: immer gerendert, unsichtbar wenn leer → kein Layout-Sprung -->
+	<p class="text-[10px] text-orange-500 mt-0.5 leading-tight h-3
+	          {agingHint(tasks.minScore) ? '' : 'invisible'}">
+		⏱{agingHint(tasks.minScore)}
+	</p>
 </div>
 
 <style>
