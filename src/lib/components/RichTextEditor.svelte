@@ -92,6 +92,7 @@
 	let isUnderline = $state(false);
 	let isBullet    = $state(false);
 	let isOrdered   = $state(false);
+	let isInList    = $state(false);
 
 	onMount(() => {
 		editor.on('selectionUpdate', updateToolbar);
@@ -103,6 +104,21 @@
 		isUnderline = editor.isActive('underline');
 		isBullet    = editor.isActive('bulletList');
 		isOrdered   = editor.isActive('orderedList');
+		isInList    = editor.isActive('listItem');
+	}
+
+	function indentList() {
+		if (!editor) return;
+		const { state, dispatch } = editor.view;
+		sinkListItem(state.schema.nodes.listItem)(state, dispatch);
+		editor.view.focus();
+	}
+
+	function outdentList() {
+		if (!editor) return;
+		const { state, dispatch } = editor.view;
+		liftListItem(state.schema.nodes.listItem)(state, dispatch);
+		editor.view.focus();
 	}
 </script>
 
@@ -142,6 +158,26 @@
 			class="toolbar-btn {isOrdered ? 'active' : ''}"
 			title="Nummerierte Liste"
 		>1. Liste</button>
+
+		{#if isInList}
+			<div class="w-px h-4 bg-gray-200 mx-1"></div>
+
+			<button
+				type="button"
+				tabindex="-1"
+				onclick={outdentList}
+				class="toolbar-btn"
+				title="Ausrücken (Shift+Tab)"
+			>&#8676;</button>
+
+			<button
+				type="button"
+				tabindex="-1"
+				onclick={indentList}
+				class="toolbar-btn"
+				title="Einrücken (Tab)"
+			>&#8677;</button>
+		{/if}
 	</div>
 
 	<!-- Editor-Bereich -->
