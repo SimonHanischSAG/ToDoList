@@ -163,7 +163,7 @@
 	<div class="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-2xl p-8 space-y-4 shadow-xl max-h-[95vh] overflow-y-auto">
 		<div class="flex items-center justify-between">
 			<h2 class="font-bold text-ibm-text">{isEdit ? 'Edit task' : 'New task'}</h2>
-				<button onclick={onclose} tabindex="-1" class="text-ibm-text-muted hover:text-ibm-text" aria-label="Close">✕</button>
+				<button onclick={onclose} tabindex="-1" class="text-ibm-text-muted hover:text-ibm-text" aria-label="Close" title="Close">✕</button>
 		</div>
 
 		<form onsubmit={handleSubmit} onkeydown={handleKeydown} class="space-y-3">

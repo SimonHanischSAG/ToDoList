@@ -198,7 +198,7 @@
 							class="text-ibm-gray-dark hover:text-red-500 transition-colors p-1"
 							title="Delete task"
 							aria-label="Delete"
-						>✕</button>
+						>🗑</button>
 				</div>
 		</div>
 	</div>
