@@ -49,13 +49,12 @@
 		return mark ?? SCORE_MARKS[0]; // Fallback: Critical
 	}
 
-	/** Hinweis-Text, wenn Aging einen Task verschoben haben könnte */
+	/** Hint text when aging may have hidden some tasks */
 	function agingHint(minScore) {
 		if (minScore <= 0) return '';
-		// Unterhalb von Normal-Basis (45) könnten gealterte Med-High-Tasks wegfallen
-		if (minScore > 40 && minScore <= 60) return ' · gealterte Med-High ggfs. ausgeblendet';
-		if (minScore > 25 && minScore <= 45) return ' · gealterte Normal/Med-High ggfs. ausgeblendet';
-		if (minScore > 10 && minScore <= 30) return ' · nur frische oder höhere Prios sichtbar';
+		if (minScore > 40 && minScore <= 60) return ' · aged Med-High tasks may be hidden';
+		if (minScore > 25 && minScore <= 45) return ' · aged Normal/Med-High tasks may be hidden';
+		if (minScore > 10 && minScore <= 30) return ' · only recent or high-priority tasks visible';
 		return '';
 	}
 
