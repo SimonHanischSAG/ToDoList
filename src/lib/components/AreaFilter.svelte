@@ -260,17 +260,18 @@
 	/* Score-Slider */
 	.score-slider::-webkit-slider-thumb {
 		appearance: none;
-		width: 14px;
-		height: 14px;
+		width: 18px;
+		height: 18px;
 		border-radius: 50%;
 		background: #3b82d4;
 		border: 2px solid white;
 		box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 		cursor: pointer;
+		margin-top: -6px; /* zentriert den Thumb auf dem 6px-Track */
 	}
 	.score-slider::-moz-range-thumb {
-		width: 14px;
-		height: 14px;
+		width: 18px;
+		height: 18px;
 		border-radius: 50%;
 		background: #3b82d4;
 		border: 2px solid white;
