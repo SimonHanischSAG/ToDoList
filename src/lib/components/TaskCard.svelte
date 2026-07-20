@@ -49,9 +49,16 @@
 		return 'bg-gray-300';
 	}
 
+	/** Parst "YYYY-MM-DD" als lokale Mitternacht (nicht UTC), damit ein
+	 *  heutiges Datum erst nach 23:59:59 Ortszeit als überfällig gilt. */
+	function localEndOfDay(dateStr) {
+		const [y, m, d] = dateStr.split('-').map(Number);
+		return new Date(y, m - 1, d, 23, 59, 59, 999);
+	}
+
 	function deadlineText(dueDate) {
 		if (!dueDate) return null;
-		const days = Math.round((new Date(dueDate) - new Date()) / 86400000);
+		const days = Math.round((localEndOfDay(dueDate) - new Date()) / 86400000);
 		if (days < 0) return `${Math.abs(days)} day${Math.abs(days) === 1 ? '' : 's'} overdue`;
 		if (days === 0) return 'Due today';
 		if (days === 1) return 'Due tomorrow';
@@ -65,7 +72,7 @@
 	const expanded = $derived(verbose || _expanded);
 
 	const deadline  = $derived(deadlineText(task.dueDate));
-	const isOverdue = $derived(!!task.dueDate && new Date(task.dueDate) < new Date());
+	const isOverdue = $derived(!!task.dueDate && localEndOfDay(task.dueDate) < new Date());
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->

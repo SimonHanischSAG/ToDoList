@@ -67,7 +67,7 @@ export function calcScore(task, allTasks) {
 
 	// 1. Deadline-Boost (granular nach exakten Tagen, damit "heute" > "in 1 Tag" > "in 2 Tagen" usw.)
 	if (task.dueDate) {
-		const daysLeft = daysDiff(new Date(), new Date(task.dueDate));
+		const daysLeft = daysDiff(new Date(), localEndOfDay(task.dueDate));
 		if (daysLeft < 0)        score += 25; // überfällig
 		else if (daysLeft === 0) score += 22; // heute
 		else if (daysLeft === 1) score += 20; // morgen
@@ -178,6 +178,13 @@ function dueDateSort(a, b) {
 }
 
 /** @param {Date} from @param {Date} to @returns {number} */
+/** Parst "YYYY-MM-DD" als lokales Ende des Tages (23:59:59),
+ *  damit ein heutiges Datum nicht als überfällig gilt. */
+function localEndOfDay(dateStr) {
+	const [y, m, d] = String(dateStr).split('-').map(Number);
+	return new Date(y, m - 1, d, 23, 59, 59, 999);
+}
+
 function daysDiff(from, to) {
 	return Math.round((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
 }
