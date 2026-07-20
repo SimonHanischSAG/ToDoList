@@ -16,6 +16,7 @@ let _activeTopics = $state(/** @type {string[]} */ ([]));
 let _minScore = $state(0);
 let _searchQuery = $state('');
 let _showDone = $state(false);
+let _showVerbose = $state(false);
 let _loading = $state(false);
 let _syncing = $state(false);
 let _error = $state(/** @type {string | null} */ (null));
@@ -89,6 +90,8 @@ export const tasks = {
 	set searchQuery(v) { _searchQuery = v; },
 	get showDone() { return _showDone; },
 	set showDone(v) { _showDone = v; _savePrefs(); },
+	get showVerbose() { return _showVerbose; },
+	set showVerbose(v) { _showVerbose = v; _savePrefs(); },
 	get loading() { return _loading; },
 	get syncing() { return _syncing; },
 	get error() { return _error; },
@@ -208,7 +211,8 @@ function _savePrefs() {
 		minScore:     _minScore,
 		activeAreas:  _activeAreas,
 		activeTopics: _activeTopics,
-		showDone:     _showDone
+		showDone:     _showDone,
+		showVerbose:  _showVerbose
 	});
 }
 
@@ -243,6 +247,7 @@ export async function initialSync() {
 			if (Array.isArray(prefs.activeAreas))         _activeAreas  = prefs.activeAreas;
 			if (Array.isArray(prefs.activeTopics))        _activeTopics = prefs.activeTopics;
 			if (typeof prefs.showDone === 'boolean')      _showDone     = prefs.showDone;
+			if (typeof prefs.showVerbose === 'boolean')   _showVerbose  = prefs.showVerbose;
 		}
 		await loadTasks();
 		_lastSync = new Date().toISOString();
@@ -285,6 +290,7 @@ export function stopSync() {
 	_activeAreas  = [];
 	_activeTopics = [];
 	_showDone     = false;
+	_showVerbose  = false;
 }
 
 /**

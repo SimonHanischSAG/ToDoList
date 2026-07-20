@@ -403,7 +403,7 @@ let prefsUploadTimer = null;
 const PREFS_DEBOUNCE_MS = 1500;
 
 /**
- * @typedef {{ minScore: number, activeAreas: string[], activeTopics: string[], showDone: boolean }} UIPrefs
+ * @typedef {{ minScore: number, activeAreas: string[], activeTopics: string[], showDone: boolean, showVerbose: boolean }} UIPrefs
  */
 
 /**

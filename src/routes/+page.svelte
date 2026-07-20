@@ -11,9 +11,8 @@
 	import FocusView from '$lib/components/FocusView.svelte';
 	import TaskForm from '$lib/components/TaskForm.svelte';
 
-	let showFocus   = $state(false);
-	let showVerbose = $state(false);
-	let showForm    = $state(false);
+	let showFocus = $state(false);
+	let showForm  = $state(false);
 
 	onMount(() => {
 		if (!browser) return;
@@ -72,19 +71,19 @@
 	<!-- Action bar -->
 	<div class="flex gap-2 mb-4">
 		<button
-			onclick={() => { showFocus = !showFocus; if (showFocus) showVerbose = false; }}
+			onclick={() => { showFocus = !showFocus; if (showFocus) tasks.showVerbose = false; }}
 			class="flex-1 bg-ibm-blue text-white text-sm font-semibold py-2 px-3 rounded-md hover:bg-ibm-blue-dark transition-colors"
 		>
 			{showFocus ? '← All tasks' : '⭐ Focus'}
 		</button>
 		<button
-			onclick={() => { showVerbose = !showVerbose; if (showVerbose) showFocus = false; }}
+			onclick={() => { tasks.showVerbose = !tasks.showVerbose; if (tasks.showVerbose) showFocus = false; }}
 			class="flex-1 text-sm font-semibold py-2 px-3 rounded-md border transition-colors
-				{showVerbose
+				{tasks.showVerbose
 					? 'bg-ibm-blue text-white border-ibm-blue hover:bg-ibm-blue-dark'
 					: 'bg-white border-ibm-gray-dark text-ibm-text hover:bg-ibm-gray'}"
 		>
-			{showVerbose ? '← Compact' : '☰ Verbose'}
+			{tasks.showVerbose ? '← Compact' : '☰ Verbose'}
 		</button>
 		<button
 			onclick={() => showForm = true}
@@ -153,7 +152,7 @@
 					<li>
 						<TaskCard
 							{task}
-							verbose={showVerbose}
+							verbose={tasks.showVerbose}
 							ondone={() => setStatus(task.id, 'done')}
 							ondelete={() => deleteTask(task.id)}
 						/>
@@ -174,7 +173,7 @@
 							<TaskCard
 								{task}
 								done
-								verbose={showVerbose}
+								verbose={tasks.showVerbose}
 								ondone={() => setStatus(task.id, 'open')}
 								ondelete={() => deleteTask(task.id)}
 							/>
