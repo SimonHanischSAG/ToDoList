@@ -48,6 +48,22 @@
 			)
 	);
 
+	// Area / Topic: custom dropdown (datalist is not supported on iOS)
+	let areaFocused   = $state(false);
+	let topicFocused  = $state(false);
+
+	const areaSuggestions = $derived(
+		areaFocused
+			? tasks.areas.filter(a => a.toLowerCase().includes(area.toLowerCase()))
+			: []
+	);
+
+	const topicSuggestions = $derived(
+		topicFocused
+			? tasks.topics.filter(tp => tp.toLowerCase().includes(topic.toLowerCase()))
+			: []
+	);
+
 	/** Add a tag (prevent duplicates) */
 	function addTag(value) {
 		const v = value.trim().replace(/^#+/, '');
@@ -214,37 +230,61 @@
 							<option value="someday">🩶 Someday</option>
 						</select>
 					</div>
-					<div>
+					<div class="relative">
 						<label class="block text-xs font-semibold text-ibm-text-muted mb-1" for="task-area">Area</label>
 						<input
 							id="task-area"
 							type="text"
 							bind:value={area}
-							list="area-suggestions"
 							tabindex="5"
+							autocomplete="off"
+							onfocus={() => (areaFocused = true)}
+							onblur={() => setTimeout(() => (areaFocused = false), 150)}
 							class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
 						/>
-						<datalist id="area-suggestions">
-							{#each tasks.areas as a}<option value={a}></option>{/each}
-						</datalist>
+						{#if areaSuggestions.length > 0}
+							<ul class="absolute z-50 left-0 right-0 mt-0.5 bg-white border border-ibm-gray-dark rounded-md shadow-md max-h-40 overflow-y-auto text-sm">
+								{#each areaSuggestions as suggestion}
+									<li>
+										<button
+											type="button"
+											class="w-full text-left px-3 py-2 hover:bg-blue-50 hover:text-ibm-blue"
+											onmousedown={() => { area = suggestion; areaFocused = false; }}
+										>{suggestion}</button>
+									</li>
+								{/each}
+							</ul>
+						{/if}
 					</div>
 				</div>
 		
 				<!-- Topic + Deadline (2 columns) -->
 				<div class="grid grid-cols-2 gap-3">
-					<div>
+					<div class="relative">
 						<label class="block text-xs font-semibold text-ibm-text-muted mb-1" for="task-topic">Topic</label>
 						<input
 							id="task-topic"
 							type="text"
 							bind:value={topic}
-							list="topic-suggestions"
 							tabindex="6"
+							autocomplete="off"
+							onfocus={() => (topicFocused = true)}
+							onblur={() => setTimeout(() => (topicFocused = false), 150)}
 							class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
 						/>
-						<datalist id="topic-suggestions">
-							{#each tasks.topics as tp}<option value={tp}></option>{/each}
-						</datalist>
+						{#if topicSuggestions.length > 0}
+							<ul class="absolute z-50 left-0 right-0 mt-0.5 bg-white border border-ibm-gray-dark rounded-md shadow-md max-h-40 overflow-y-auto text-sm">
+								{#each topicSuggestions as suggestion}
+									<li>
+										<button
+											type="button"
+											class="w-full text-left px-3 py-2 hover:bg-blue-50 hover:text-ibm-blue"
+											onmousedown={() => { topic = suggestion; topicFocused = false; }}
+										>{suggestion}</button>
+									</li>
+								{/each}
+							</ul>
+						{/if}
 					</div>
 					<div>
 						<label class="block text-xs font-semibold text-ibm-text-muted mb-1" for="task-due">Due date</label>
