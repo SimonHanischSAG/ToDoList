@@ -9,16 +9,6 @@
 <script>
 	import { tasks } from '$lib/stores/taskStore.svelte.js';
 
-	/** Scrolls a filter row one page left/right */
-	function scrollRow(el, dir) {
-		if (!el) return;
-		el.scrollBy({ left: dir * 160, behavior: 'smooth' });
-	}
-
-	/** Ref variables for the two scrollable rows */
-	let areaRow = $state(null);
-	let topicRow = $state(null);
-
 	/**
 	 * Priority markers on the slider scale.
 	 * basePrio values from priority.js – show the "fresh" score of a category.
@@ -71,7 +61,7 @@
 <!-- Area-Filter -->
 <div class="filter-row-wrapper">
 	<span class="flex-shrink-0 text-xs text-ibm-text-muted self-center pr-1">Area:</span>
-	<div class="filter-row" bind:this={areaRow}>
+	<div class="filter-row">
 		<button
 			onclick={() => tasks.activeAreas = []}
 			class="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors
@@ -100,15 +90,13 @@
 			{/if}
 		{/each}
 	</div>
-	<button class="scroll-btn" onclick={() => scrollRow(areaRow, -1)} aria-label="Scroll left">‹</button>
-	<button class="scroll-btn" onclick={() => scrollRow(areaRow,  1)} aria-label="Scroll right">›</button>
 </div>
 
 <!-- Topic-Filter (nur wenn Topics vorhanden) -->
 {#if tasks.visibleTopics.length > 0}
 	<div class="filter-row-wrapper mt-1">
 		<span class="flex-shrink-0 text-xs text-ibm-text-muted self-center pr-1">Topic:</span>
-		<div class="filter-row" bind:this={topicRow}>
+		<div class="filter-row">
 			<button
 				onclick={() => tasks.activeTopics = []}
 				class="flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors
@@ -134,8 +122,6 @@
 				</button>
 			{/each}
 		</div>
-		<button class="scroll-btn" onclick={() => scrollRow(topicRow, -1)} aria-label="Scroll left">‹</button>
-		<button class="scroll-btn" onclick={() => scrollRow(topicRow,  1)} aria-label="Scroll right">›</button>
 	</div>
 {/if}
 
@@ -238,27 +224,6 @@
 	}
 	.filter-row::-webkit-scrollbar-track {
 		background: transparent;
-	}
-
-	/* Arrow buttons only visible when needed (hover on wrapper) */
-	.scroll-btn {
-		flex-shrink: 0;
-		width: 20px;
-		height: 20px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 16px;
-		line-height: 1;
-		color: #9ca3af;
-		background: transparent;
-		border: none;
-		padding: 0;
-		cursor: pointer;
-		transition: color 0.15s;
-	}
-	.scroll-btn:hover {
-		color: #3b82d4;
 	}
 
 	/* Score-Slider */
