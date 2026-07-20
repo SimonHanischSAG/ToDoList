@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" width="180" height="180">
+  <!-- Hintergrund IBM-Dunkelblau -->
+  <rect width="180" height="180" rx="20" fill="#1d3763"/>
+
+  <!-- IBM 8-Streifen-Logo: I, B, M jeweils aus horizontalen Linien -->
+
+  <!-- === I === -->
+  <!-- 8 Streifen, breiter Block links -->
+  <rect x="12" y="30" width="30" height="9"  fill="#fff"/>
+  <rect x="12" y="44" width="30" height="9"  fill="#fff"/>
+  <rect x="12" y="58" width="30" height="9"  fill="#fff"/>
+  <rect x="12" y="72" width="30" height="9"  fill="#fff"/>
+  <rect x="12" y="86" width="30" height="9"  fill="#fff"/>
+  <rect x="12" y="100" width="30" height="9" fill="#fff"/>
+  <rect x="12" y="114" width="30" height="9" fill="#fff"/>
+  <rect x="12" y="128" width="30" height="9" fill="#fff"/>
+
+  <!-- === B === -->
+  <!-- Linke Seite + Ausbuchtungen rechts -->
+  <rect x="52" y="30" width="38" height="9"  fill="#fff"/>
+  <rect x="52" y="44" width="32" height="9"  fill="#fff"/>
+  <rect x="52" y="58" width="30" height="9"  fill="#fff"/>
+  <rect x="52" y="72" width="38" height="9"  fill="#fff"/>
+  <rect x="52" y="86" width="38" height="9"  fill="#fff"/>
+  <rect x="52" y="100" width="30" height="9" fill="#fff"/>
+  <rect x="52" y="114" width="32" height="9" fill="#fff"/>
+  <rect x="52" y="128" width="38" height="9" fill="#fff"/>
+
+  <!-- === M === -->
+  <rect x="102" y="30"  width="68" height="9"  fill="#fff"/>
+  <rect x="102" y="44"  width="14" height="9"  fill="#fff"/>
+  <rect x="156" y="44"  width="14" height="9"  fill="#fff"/>
+  <rect x="102" y="58"  width="14" height="9"  fill="#fff"/>
+  <rect x="134" y="51"  width="6"  height="9"  fill="#fff"/>
+  <rect x="156" y="58"  width="14" height="9"  fill="#fff"/>
+  <rect x="102" y="72"  width="68" height="9"  fill="#fff"/>
+  <rect x="102" y="86"  width="68" height="9"  fill="#fff"/>
+  <rect x="102" y="100" width="14" height="9"  fill="#fff"/>
+  <rect x="156" y="100" width="14" height="9"  fill="#fff"/>
+  <rect x="102" y="114" width="14" height="9"  fill="#fff"/>
+  <rect x="156" y="114" width="14" height="9"  fill="#fff"/>
+  <rect x="102" y="128" width="68" height="9"  fill="#fff"/>
+
+  <!-- IBM-Tagline: 3 blaue Streifen unten -->
+  <rect x="12" y="148" width="156" height="5" fill="#4589ff" rx="1"/>
+  <rect x="12" y="157" width="156" height="5" fill="#4589ff" rx="1"/>
+  <rect x="12" y="166" width="156" height="5" fill="#4589ff" rx="1"/>
+</svg>
