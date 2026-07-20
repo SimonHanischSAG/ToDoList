@@ -282,12 +282,26 @@ export function stopSync() {
 	_showDone     = false;
 }
 
+/**
+ * Central error callback passed to schedulePush.
+ * Sets _error so the UI banner shows the conflict message.
+ * @param {Error} err
+ */
+function _onPushError(err) {
+	const msg = String(err.message ?? err);
+	if (msg.startsWith('CONFLICT')) {
+		_error = '⚠ Sync conflict: another device saved changes at the same time. Your local changes are kept. The remote version will be reloaded automatically.';
+	} else {
+		_error = `Sync error: ${msg}`;
+	}
+}
+
 /** @param {Partial<import('../model/task.js').Task>} data */
 export async function addTask(data) {
 	const task = createTask({ ...data, area: data.area ?? (_activeAreas[0] ?? '') });
 	await db.tasks.add(task);
 	_tasks = rankTasks([..._tasks, task]);
-	schedulePush();
+	schedulePush(_onPushError);
 }
 
 /**
@@ -298,7 +312,7 @@ export async function updateTask(id, changes) {
 	const updated = { ...changes, updatedAt: new Date().toISOString() };
 	await db.tasks.update(id, updated);
 	_tasks = rankTasks(_tasks.map(t => t.id === id ? { ...t, ...updated } : t));
-	schedulePush();
+	schedulePush(_onPushError);
 }
 
 /** @param {string} id @param {import('../model/task.js').TaskStatus} status */
@@ -310,7 +324,7 @@ export async function setStatus(id, status) {
 export async function deleteTask(id) {
 	await db.tasks.delete(id);
 	_tasks = _tasks.filter(t => t.id !== id);
-	schedulePush();
+	schedulePush(_onPushError);
 }
 
 /** @param {unknown[]} rawTasks */
@@ -318,5 +332,5 @@ export async function importTasks(rawTasks) {
 	const normalized = rawTasks.map(normalizeTask);
 	await db.tasks.bulkPut(normalized);
 	_tasks = rankTasks([..._tasks, ...normalized]);
-	schedulePush();
+	schedulePush(_onPushError);
 }

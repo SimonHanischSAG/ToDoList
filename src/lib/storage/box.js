@@ -9,11 +9,13 @@
  *
  * Concurrent safety (optimistic locking):
  *   - Each file version has an ETag (SHA-1 of the file in Box).
- *   - On upload we check via If-Match whether the file has changed in the meantime.
- *   - On a 412 conflict we first download the remote state, merge locally and
- *     retry (max. 3 attempts).
+ *   - On upload we send If-Match with the known ETag.
+ *   - On a 412 conflict the upload is aborted and an error is thrown.
+ *     The caller continues working with the local state; the next poll cycle
+ *     will reload the remote version.
  *   - startPolling() checks the ETag every 30 seconds (no body download)
- *     and only reloads when the file has changed.
+ *     and only reloads when the file has changed – and only when no local
+ *     upload is pending.
  */
 
 import { getToken, logout, refreshToken } from '../auth/box.js';
@@ -218,8 +220,18 @@ export async function syncFromBox() {
 	const res = await boxFetch(`${BOX_API}/files/${id}/content`);
 	if (!res.ok) throw new Error(`Box download error: ${res.status}`);
 
-	// Save ETag (Box delivers it in the content response header)
-	knownEtag = res.headers.get('etag') ?? knownEtag;
+	// Box does not reliably include the ETag in the content response header.
+	// Fall back to the metadata endpoint to get a guaranteed ETag value.
+	const etagFromHeader = res.headers.get('etag');
+	if (etagFromHeader) {
+		knownEtag = etagFromHeader;
+	} else {
+		const meta = await boxFetch(`${BOX_API}/files/${id}?fields=etag`);
+		if (meta.ok) {
+			const metaData = await meta.json();
+			if (metaData.etag) knownEtag = metaData.etag;
+		}
+	}
 
 	/** @type {import('../model/task.js').Task[]} */
 	const tasks = await res.json();
@@ -248,39 +260,12 @@ async function fetchRemoteEtag() {
 }
 
 /**
- * Merges remote and local tasks using "last-writer-wins" based on updatedAt.
- * Remote-only tasks (not present locally) are added.
- * @param {import('../model/task.js').Task[]} remote
- * @param {import('../model/task.js').Task[]} local
- * @returns {import('../model/task.js').Task[]}
- */
-function mergeTasks(remote, local) {
-	const byId = new Map(local.map(t => [t.id, t]));
-	for (const rt of remote) {
-		const lt = byId.get(rt.id);
-		if (!lt) {
-			// Remote-only → take over
-			byId.set(rt.id, rt);
-		} else {
-			// Both present → newer wins
-			const remoteTs = new Date(rt.updatedAt ?? 0).getTime();
-			const localTs  = new Date(lt.updatedAt ?? 0).getTime();
-			if (remoteTs > localTs) byId.set(rt.id, rt);
-		}
-	}
-	return Array.from(byId.values());
-}
-
-/**
  * Writes the current local cache as todos.json to Box.
  * Uses optimistic locking (If-Match with known ETag).
- * On 412 conflict: download remote, merge, retry (max. 3 attempts).
- * @param {number} attempt
+ * On 412 conflict: throws CONFLICT_ERROR – caller keeps working with local state.
  * @returns {Promise<void>}
  */
-export async function pushToBox(attempt = 0) {
-	if (attempt > 2) throw new Error('Box sync: too many conflicts – upload aborted');
-
+export async function pushToBox() {
 	const local  = await db.tasks.toArray();
 	const body   = JSON.stringify(local, null, 2);
 	const folder = await getOrCreateFolder();
@@ -304,7 +289,7 @@ export async function pushToBox(attempt = 0) {
 
 	/** @type {Record<string, string>} */
 	const extraHeaders = {};
-	// Set If-Match only when updating an existing file
+	// Set If-Match only when updating an existing file and ETag is known
 	if (id && knownEtag) {
 		extraHeaders['If-Match'] = knownEtag;
 	}
@@ -315,22 +300,13 @@ export async function pushToBox(attempt = 0) {
 		headers: extraHeaders
 	});
 
-	// 412 Precondition Failed → file was changed on another device
+	// 412 Precondition Failed → another device has written in the meantime.
+	// We do NOT merge – abort and let the next poll reload the remote version.
 	if (res.status === 412) {
-		console.warn('[Box] Write conflict (412) – downloading remote, merging, retrying…');
-		// Download remote state
-		const remoteRes = await boxFetch(`${BOX_API}/files/${id}/content`);
-		if (remoteRes.ok) {
-			knownEtag = remoteRes.headers.get('etag') ?? knownEtag;
-			const remote = /** @type {import('../model/task.js').Task[]} */ (await remoteRes.json());
-			const merged = mergeTasks(remote, local);
-			// Save merge locally
-			await db.tasks.clear();
-			await db.tasks.bulkPut(merged);
-		}
-		// Retry with fresh file ID lookup (etag has changed)
-		fileId = null; // clear cache so findFile() picks up the new version
-		return pushToBox(attempt + 1);
+		// Invalidate the cached file ID so the next upload re-fetches metadata.
+		fileId    = null;
+		knownEtag = null;
+		throw new Error('CONFLICT: remote file has changed – upload aborted. Remote version will be loaded on next sync.');
 	}
 
 	if (!res.ok) throw new Error(`Box upload error: ${res.status} ${await res.text()}`);
@@ -343,15 +319,18 @@ export async function pushToBox(attempt = 0) {
 
 /**
  * Schedules a debounced upload to Box.
+ * @param {((err: Error) => void) | undefined} [onError]  Optional callback invoked on push failure.
  */
-export function schedulePush() {
+export function schedulePush(onError) {
 	if (uploadTimer) clearTimeout(uploadTimer);
 	uploadTimer = setTimeout(async () => {
+		uploadTimer = null;
 		try {
 			await pushToBox();
 		} catch (err) {
 			console.error('[Box] Push failed:', err);
 			await db.syncQueue.add({ timestamp: new Date().toISOString(), error: String(err) });
+			onError?.(/** @type {Error} */ (err));
 		}
 	}, UPLOAD_DEBOUNCE_MS);
 }
@@ -383,6 +362,9 @@ export function startPolling(callback) {
 
 	pollTimer = setInterval(async () => {
 		if (!getToken()) return; // not logged in
+		// Skip polling while a local upload is still pending – avoids overwriting
+		// uncommitted local changes with the remote state.
+		if (uploadTimer !== null) return;
 		try {
 			const remoteEtag = await fetchRemoteEtag();
 			if (remoteEtag === null) return;
@@ -390,7 +372,6 @@ export function startPolling(callback) {
 
 			console.info('[Box] Remote change detected – reloading…');
 			await syncFromBox();
-			knownEtag = remoteEtag;
 			onRemoteChange?.();
 		} catch (err) {
 			// Network error during polling → ignore, retry in 30s
