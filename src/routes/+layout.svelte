@@ -106,7 +106,7 @@
 	</div>
 
 {:else}
-	<div class="min-h-screen bg-ibm-gray flex flex-col overflow-y-scroll">
+	<div class="min-h-screen bg-ibm-gray flex flex-col" style="overflow-y: auto; scrollbar-gutter: stable;">
 		<header class="bg-ibm-text shadow-sm px-4 py-3 flex items-center justify-between">
 			<span class="text-white font-bold text-lg">IBM Todo</span>
 			<div class="flex items-center gap-3">
