@@ -15,7 +15,7 @@
 	<div class="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
 
 		<!-- Title -->
-		<div class="text-lg font-bold text-ibm-text mb-1">Welcome to IBM Todo</div>
+		<div class="text-lg font-bold text-ibm-text mb-1">Welcome to IBM ToDo List</div>
 		<p class="text-sm text-ibm-text-muted mb-5">
 			Where should your tasks be stored?
 		</p>

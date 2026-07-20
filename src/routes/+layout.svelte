@@ -100,7 +100,7 @@
 {#if !ready}
 	<div class="flex items-center justify-center min-h-screen bg-ibm-gray">
 		<div class="text-center">
-			<div class="text-4xl font-bold text-ibm-blue mb-2">IBM Todo</div>
+			<div class="text-4xl font-bold text-ibm-blue mb-2">IBM ToDo List</div>
 			<div class="text-ibm-text-muted text-sm">Loading…</div>
 		</div>
 	</div>
@@ -109,7 +109,7 @@
 	<!-- Outer wrapper: exactly viewport height, no own scrolling -->
 	<div class="bg-ibm-gray flex flex-col" style="height: 100dvh; overflow: hidden;">
 		<header class="bg-ibm-text shadow-sm px-4 py-3 flex items-center justify-between flex-shrink-0">
-			<span class="text-white font-bold text-lg">IBM Todo</span>
+			<span class="text-white font-bold text-lg">IBM ToDo List</span>
 			<div class="flex items-center gap-3">
 				{#if loggedIn}
 					<!-- Logged in: Export / Import / User / Logout -->
