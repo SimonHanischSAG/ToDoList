@@ -1,19 +1,19 @@
 /**
- * Box Content API – Storage-Anbindung
+ * Box Content API – storage adapter
  *
- * Alle Todos werden als einzelne JSON-Datei im Box-Account des Nutzers gespeichert:
+ * All todos are stored as a single JSON file in the user's Box account:
  *   /IBMTodoStorage/todos.json
  *
- * Lesezugriffe gehen gegen den lokalen IndexedDB-Cache (Dexie).
- * Schreibzugriffe werden sofort lokal angewendet und debounced nach Box synchronisiert.
+ * Reads go against the local IndexedDB cache (Dexie).
+ * Writes are applied locally immediately and synced to Box with debounce.
  *
- * Concurrent-Safety (Optimistic Locking):
- *   - Jede Dateiversion hat einen ETag (SHA-1 der Datei in Box).
- *   - Beim Upload prüfen wir per If-Match, ob sich die Datei zwischenzeitlich geändert hat.
- *   - Tritt ein 412-Konflikt auf, laden wir zuerst den Remote-Stand, mergen lokal und
- *     versuchen es erneut (max. 3 Versuche).
- *   - startPolling() prüft alle 30 Sekunden den ETag-Header (HEAD-Request, kein Download)
- *     und lädt nur dann neu, wenn sich die Datei geändert hat.
+ * Concurrent safety (optimistic locking):
+ *   - Each file version has an ETag (SHA-1 of the file in Box).
+ *   - On upload we check via If-Match whether the file has changed in the meantime.
+ *   - On a 412 conflict we first download the remote state, merge locally and
+ *     retry (max. 3 attempts).
+ *   - startPolling() checks the ETag every 30 seconds (no body download)
+ *     and only reloads when the file has changed.
  */
 
 import { getToken, logout, refreshToken } from '../auth/box.js';
@@ -23,68 +23,67 @@ const BOX_API = 'https://api.box.com/2.0';
 const FOLDER_NAME    = 'IBMTodoStorage';
 const FILE_NAME      = 'todos.json';
 const README_NAME    = 'README.txt';
-const README_CONTENT = `IBMTodoStorage – Datenordner der IBM Todo App
-==============================================
+const README_CONTENT = `IBMTodoStorage – data folder of the IBM Todo App
+=================================================
 
-Dieser Ordner wird automatisch von der IBM Todo App angelegt und verwaltet:
+This folder is automatically created and managed by the IBM Todo App:
 https://simonhanischsag.github.io/ToDoList/
 
-Inhalt
-------
-todos.json   Alle deine Aufgaben als JSON-Datei (UTF-8)
-README.txt   Diese Datei
+Contents
+--------
+todos.json   All your tasks as a JSON file (UTF-8)
+README.txt   This file
 
-Was passiert, wenn du diesen Ordner oder todos.json löschst?
--------------------------------------------------------------
-- Beim nächsten App-Start werden ALLE Aufgaben unwiderruflich gelöscht.
-- Die App legt den Ordner und eine leere todos.json neu an.
-- Ein Wiederherstellen ist nur möglich, wenn du vorher ein Backup
-  (Export als JSON über die App) angelegt hast.
+What happens if you delete this folder or todos.json?
+------------------------------------------------------
+- On the next app start ALL tasks will be permanently deleted.
+- The app will recreate the folder and an empty todos.json.
+- Recovery is only possible if you previously created a backup
+  (export as JSON via the app).
 
 Backup / Restore
 ----------------
-In der App (oben rechts) gibt es Export- und Import-Schaltflächen.
-Damit kannst du ein lokales Backup als JSON-Datei erstellen und
-bei Bedarf wiederherstellen.
+The app (top right) has Export and Import buttons.
+Use them to create a local backup as a JSON file and restore it if needed.
 
-Bitte diesen Ordner NICHT umbenennen oder verschieben.
+Please do NOT rename or move this folder.
 `;
 
-// ── Interne Zustandsvariablen ──────────────────────────────────────────────
+// ── Internal state ─────────────────────────────────────────────────────────
 
-/** Debounce-Timer für den Upload */
+/** Debounce timer for uploads */
 let uploadTimer = null;
 const UPLOAD_DEBOUNCE_MS = 2000;
 
-/** Gecachte IDs um wiederholte Folder-Lookups zu vermeiden */
+/** Cached IDs to avoid repeated folder lookups */
 let folderId = null;
 let fileId   = null;
 let readmeId = null;
 
 /**
- * Letzter bekannter ETag der todos.json in Box.
- * Wird nach jedem erfolgreichen Download oder Upload aktualisiert.
- * Dient als Optimistic-Lock: Wir senden If-Match beim Upload.
+ * Last known ETag of todos.json in Box.
+ * Updated after every successful download or upload.
+ * Used as optimistic lock: we send If-Match on upload.
  * @type {string | null}
  */
 let knownEtag = null;
 
-/** Polling-Interval-Handle */
+/** Polling interval handle */
 let pollTimer = null;
-const POLL_INTERVAL_MS = 30_000; // 30 Sekunden
+const POLL_INTERVAL_MS = 30_000; // 30 seconds
 
 /**
- * Callback der aufgerufen wird, wenn Polling eine Remote-Änderung entdeckt hat
- * und die lokalen Daten neu geladen wurden.
+ * Callback invoked when polling has detected a remote change
+ * and the local data has been reloaded.
  * @type {(() => void) | null}
  */
 let onRemoteChange = null;
 
-// ── Box API Helpers ────────────────────────────────────────────────────────
+// ── Box API helpers ────────────────────────────────────────────────────────
 
 /**
- * Führt einen authentifizierten Box-API-Request aus.
- * Bei 401 (abgelaufener Token) wird einmalig still refresht.
+ * Performs an authenticated Box API request.
+ * On 401 (expired token) it silently retries once after a refresh.
  * @param {string} url
  * @param {RequestInit} options
  * @param {boolean} _retry
@@ -92,7 +91,7 @@ let onRemoteChange = null;
  */
 async function boxFetch(url, options = {}, _retry = true) {
 	const token = getToken();
-	if (!token) throw new Error('Nicht eingeloggt');
+	if (!token) throw new Error('Not logged in');
 	const res = await fetch(url, {
 		...options,
 		headers: {
@@ -110,7 +109,7 @@ async function boxFetch(url, options = {}, _retry = true) {
 }
 
 /**
- * Sucht oder erstellt den IBMTodoStorage-Ordner im Root des Nutzers.
+ * Finds or creates the IBMTodoStorage folder in the user's root.
  * @returns {Promise<string>} Folder ID
  */
 async function getOrCreateFolder() {
@@ -119,7 +118,7 @@ async function getOrCreateFolder() {
 	const res = await boxFetch(
 		`${BOX_API}/folders/0/items?fields=id,name,type&limit=100`
 	);
-	if (!res.ok) throw new Error(`Box API Fehler: ${res.status} – ${await res.text()}`);
+	if (!res.ok) throw new Error(`Box API error: ${res.status} – ${await res.text()}`);
 	const data = await res.json();
 
 	const existing = data.entries?.find(
@@ -136,14 +135,14 @@ async function getOrCreateFolder() {
 		headers: { 'Content-Type': 'application/json' },
 		body:    JSON.stringify({ name: FOLDER_NAME, parent: { id: '0' } })
 	});
-	if (!createRes.ok) throw new Error(`Box Ordner-Erstellung fehlgeschlagen: ${createRes.status}`);
+	if (!createRes.ok) throw new Error(`Box folder creation failed: ${createRes.status}`);
 	const folder = await createRes.json();
 	folderId = folder.id;
 	return folderId;
 }
 
 /**
- * Legt README.txt im Ordner an, falls sie noch nicht existiert.
+ * Creates README.txt in the folder if it does not yet exist.
  * @param {string} folder Folder ID
  */
 async function ensureReadme(folder) {
@@ -177,9 +176,9 @@ async function ensureReadme(folder) {
 }
 
 /**
- * Sucht die todos.json im IBMTodo-Ordner.
- * Gibt null zurück wenn sie nicht existiert.
- * @returns {Promise<string | null>} File ID oder null
+ * Finds todos.json in the IBMTodo folder.
+ * Returns null if it does not exist.
+ * @returns {Promise<string | null>} File ID or null
  */
 async function findFile() {
 	if (fileId) return fileId;
@@ -201,11 +200,11 @@ async function findFile() {
 	return null;
 }
 
-// ── Öffentliche API ────────────────────────────────────────────────────────
+// ── Public API ─────────────────────────────────────────────────────────────
 
 /**
- * Lädt todos.json aus Box und schreibt alles in den lokalen Cache.
- * Speichert den ETag der Datei für späteres Optimistic Locking.
+ * Downloads todos.json from Box and writes everything to the local cache.
+ * Saves the file ETag for later optimistic locking.
  * @returns {Promise<void>}
  */
 export async function syncFromBox() {
@@ -217,9 +216,9 @@ export async function syncFromBox() {
 	}
 
 	const res = await boxFetch(`${BOX_API}/files/${id}/content`);
-	if (!res.ok) throw new Error(`Box Download Fehler: ${res.status}`);
+	if (!res.ok) throw new Error(`Box download error: ${res.status}`);
 
-	// ETag merken (Box liefert ihn im Content-Response-Header)
+	// Save ETag (Box delivers it in the content response header)
 	knownEtag = res.headers.get('etag') ?? knownEtag;
 
 	/** @type {import('../model/task.js').Task[]} */
@@ -229,16 +228,16 @@ export async function syncFromBox() {
 }
 
 /**
- * Liest den aktuellen ETag der todos.json per HEAD-Request (ohne Body-Download).
- * Gibt null zurück wenn kein ETag verfügbar oder Datei nicht existiert.
+ * Reads the current ETag of todos.json via metadata endpoint (no body download).
+ * Returns null if no ETag is available or the file does not exist.
  * @returns {Promise<string | null>}
  */
 async function fetchRemoteEtag() {
 	const id = await findFile();
 	if (!id) return null;
 	try {
-		// Box liefert bei HEAD kein ETag im Standard-Header; stattdessen nutzen wir
-		// den Datei-Metadaten-Endpunkt (sequence_id ändert sich bei jeder Version).
+		// Box does not return an ETag on HEAD; use the file metadata endpoint instead
+		// (sequence_id changes with every new version).
 		const res = await boxFetch(`${BOX_API}/files/${id}?fields=id,etag,sequence_id`);
 		if (!res.ok) return null;
 		const data = await res.json();
@@ -249,8 +248,8 @@ async function fetchRemoteEtag() {
 }
 
 /**
- * Merged Remote-Tasks und lokale Tasks nach „last-writer-wins" basierend auf updatedAt.
- * Neue Remote-Tasks (nicht lokal vorhanden) werden hinzugefügt.
+ * Merges remote and local tasks using "last-writer-wins" based on updatedAt.
+ * Remote-only tasks (not present locally) are added.
  * @param {import('../model/task.js').Task[]} remote
  * @param {import('../model/task.js').Task[]} local
  * @returns {import('../model/task.js').Task[]}
@@ -260,10 +259,10 @@ function mergeTasks(remote, local) {
 	for (const rt of remote) {
 		const lt = byId.get(rt.id);
 		if (!lt) {
-			// Remote-only → übernehmen
+			// Remote-only → take over
 			byId.set(rt.id, rt);
 		} else {
-			// Beide vorhanden → neueren Stand gewinnt
+			// Both present → newer wins
 			const remoteTs = new Date(rt.updatedAt ?? 0).getTime();
 			const localTs  = new Date(lt.updatedAt ?? 0).getTime();
 			if (remoteTs > localTs) byId.set(rt.id, rt);
@@ -273,14 +272,14 @@ function mergeTasks(remote, local) {
 }
 
 /**
- * Schreibt den aktuellen lokalen Cache als todos.json nach Box.
- * Nutzt Optimistic Locking (If-Match mit bekanntem ETag).
- * Bei 412-Konflikt: Remote laden, mergen, nochmal versuchen (max. 3 Versuche).
+ * Writes the current local cache as todos.json to Box.
+ * Uses optimistic locking (If-Match with known ETag).
+ * On 412 conflict: download remote, merge, retry (max. 3 attempts).
  * @param {number} attempt
  * @returns {Promise<void>}
  */
 export async function pushToBox(attempt = 0) {
-	if (attempt > 2) throw new Error('Box Sync: Zu viele Konflikte – Upload abgebrochen');
+	if (attempt > 2) throw new Error('Box sync: too many conflicts – upload aborted');
 
 	const local  = await db.tasks.toArray();
 	const body   = JSON.stringify(local, null, 2);
@@ -305,7 +304,7 @@ export async function pushToBox(attempt = 0) {
 
 	/** @type {Record<string, string>} */
 	const extraHeaders = {};
-	// If-Match nur beim Update einer bestehenden Datei setzen
+	// Set If-Match only when updating an existing file
 	if (id && knownEtag) {
 		extraHeaders['If-Match'] = knownEtag;
 	}
@@ -316,34 +315,34 @@ export async function pushToBox(attempt = 0) {
 		headers: extraHeaders
 	});
 
-	// 412 Precondition Failed → Datei wurde von einem anderen Gerät geändert
+	// 412 Precondition Failed → file was changed on another device
 	if (res.status === 412) {
-		console.warn('[Box] Schreib-Konflikt (412) – lade Remote, merge, retry …');
-		// Remote-Stand herunterladen
+		console.warn('[Box] Write conflict (412) – downloading remote, merging, retrying…');
+		// Download remote state
 		const remoteRes = await boxFetch(`${BOX_API}/files/${id}/content`);
 		if (remoteRes.ok) {
 			knownEtag = remoteRes.headers.get('etag') ?? knownEtag;
 			const remote = /** @type {import('../model/task.js').Task[]} */ (await remoteRes.json());
 			const merged = mergeTasks(remote, local);
-			// Merge lokal speichern
+			// Save merge locally
 			await db.tasks.clear();
 			await db.tasks.bulkPut(merged);
 		}
-		// Erneut versuchen mit erneutem Datei-ID-Lookup (etag hat sich geändert)
-		fileId = null; // Cache leeren damit findFile() die neue Version findet
+		// Retry with fresh file ID lookup (etag has changed)
+		fileId = null; // clear cache so findFile() picks up the new version
 		return pushToBox(attempt + 1);
 	}
 
-	if (!res.ok) throw new Error(`Box Upload Fehler: ${res.status} ${await res.text()}`);
+	if (!res.ok) throw new Error(`Box upload error: ${res.status} ${await res.text()}`);
 
-	// Neuen ETag aus der Antwort merken
+	// Save new ETag from the response
 	const result = await res.json();
 	fileId    = result.entries?.[0]?.id    ?? fileId;
 	knownEtag = result.entries?.[0]?.etag  ?? knownEtag;
 }
 
 /**
- * Plant einen debounced Upload nach Box.
+ * Schedules a debounced upload to Box.
  */
 export function schedulePush() {
 	if (uploadTimer) clearTimeout(uploadTimer);
@@ -351,14 +350,14 @@ export function schedulePush() {
 		try {
 			await pushToBox();
 		} catch (err) {
-			console.error('[Box] Push fehlgeschlagen:', err);
+			console.error('[Box] Push failed:', err);
 			await db.syncQueue.add({ timestamp: new Date().toISOString(), error: String(err) });
 		}
 	}, UPLOAD_DEBOUNCE_MS);
 }
 
 /**
- * Versucht ausstehende Sync-Queue-Einträge zu verarbeiten.
+ * Attempts to process pending sync queue entries.
  */
 export async function retryFailedSyncs() {
 	const pending = await db.syncQueue.toArray();
@@ -367,41 +366,41 @@ export async function retryFailedSyncs() {
 		await pushToBox();
 		await db.syncQueue.clear();
 	} catch {
-		// Noch offline
+		// Still offline
 	}
 }
 
 /**
- * Startet das automatische Polling auf Remote-Änderungen.
- * Alle 30 Sekunden wird der ETag geprüft. Hat er sich geändert, werden
- * die Daten neu geladen und `callback` aufgerufen.
+ * Starts automatic polling for remote changes.
+ * Every 30 seconds the ETag is checked. If it has changed,
+ * the data is reloaded and `callback` is called.
  *
- * @param {() => void} callback  Wird aufgerufen nachdem neue Remote-Daten geladen wurden
+ * @param {() => void} callback  Called after new remote data has been loaded
  */
 export function startPolling(callback) {
 	onRemoteChange = callback;
-	if (pollTimer) return; // bereits aktiv
+	if (pollTimer) return; // already active
 
 	pollTimer = setInterval(async () => {
-		if (!getToken()) return; // Nicht eingeloggt
+		if (!getToken()) return; // not logged in
 		try {
 			const remoteEtag = await fetchRemoteEtag();
 			if (remoteEtag === null) return;
-			if (knownEtag !== null && remoteEtag === knownEtag) return; // keine Änderung
+			if (knownEtag !== null && remoteEtag === knownEtag) return; // no change
 
-			console.info('[Box] Remote-Änderung erkannt – lade neu …');
+			console.info('[Box] Remote change detected – reloading…');
 			await syncFromBox();
 			knownEtag = remoteEtag;
 			onRemoteChange?.();
 		} catch (err) {
-			// Netzwerk-Fehler beim Polling → ignorieren, nächster Versuch in 30s
-			console.warn('[Box] Polling-Fehler:', err);
+			// Network error during polling → ignore, retry in 30s
+			console.warn('[Box] Polling error:', err);
 		}
 	}, POLL_INTERVAL_MS);
 }
 
 /**
- * Stoppt das Polling (z.B. beim Logout).
+ * Stops polling (e.g. on logout).
  */
 export function stopPolling() {
 	if (pollTimer) {
@@ -412,13 +411,13 @@ export function stopPolling() {
 	knownEtag = null;
 }
 
-// ── UI-Präferenzen (prefs.json) ────────────────────────────────────────────
+// ── UI preferences (prefs.json) ────────────────────────────────────────────
 
 const PREFS_FILE_NAME = 'prefs.json';
 
-/** Gecachte File-ID für prefs.json */
+/** Cached file ID for prefs.json */
 let prefsFileId = null;
-/** Debounce-Timer für Prefs-Upload */
+/** Debounce timer for prefs upload */
 let prefsUploadTimer = null;
 const PREFS_DEBOUNCE_MS = 1500;
 
@@ -427,8 +426,8 @@ const PREFS_DEBOUNCE_MS = 1500;
  */
 
 /**
- * Lädt prefs.json aus Box.
- * Gibt null zurück wenn noch keine Präferenzen gespeichert wurden.
+ * Loads prefs.json from Box.
+ * Returns null if no preferences have been saved yet.
  * @returns {Promise<UIPrefs | null>}
  */
 export async function loadPrefs() {
@@ -452,7 +451,7 @@ export async function loadPrefs() {
 }
 
 /**
- * Speichert die UI-Präferenzen als prefs.json in Box.
+ * Saves the UI preferences as prefs.json to Box.
  * @param {UIPrefs} prefs
  * @returns {Promise<void>}
  */
@@ -479,12 +478,12 @@ export async function savePrefs(prefs) {
 			prefsFileId = result.entries?.[0]?.id ?? prefsFileId;
 		}
 	} catch (err) {
-		console.warn('[Box] Prefs-Speichern fehlgeschlagen:', err);
+		console.warn('[Box] Prefs save failed:', err);
 	}
 }
 
 /**
- * Plant einen debounced Prefs-Upload.
+ * Schedules a debounced prefs upload.
  * @param {UIPrefs} prefs
  */
 export function schedulePrefs(prefs) {

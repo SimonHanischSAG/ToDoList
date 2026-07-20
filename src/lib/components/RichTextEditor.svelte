@@ -1,9 +1,9 @@
 <!--
-  RichTextEditor - Tiptap-basierter Mini-Editor
-  Unterstuetzt: Fett, Unterstrichen, Aufzaehlungsliste, Nummerierte Liste
+  RichTextEditor – Tiptap-based mini editor
+  Supports: Bold, Underline, Bullet list, Ordered list
   Props:
-    value (string) - HTML-Inhalt (bind:value)
-    placeholder (string) - Platzhaltertext
+    value (string) – HTML content (bind:value)
+    placeholder (string) – placeholder text
 -->
 <script>
 	import { onMount, onDestroy } from 'svelte';
@@ -35,7 +35,7 @@
 			content: value || '',
 			onUpdate: ({ editor }) => {
 				const html = editor.getHTML();
-				// Leerer Editor -> leerer String
+				// Empty editor → empty string
 				value = html === '<p></p>' ? '' : html;
 			},
 			editorProps: {
@@ -46,7 +46,7 @@
 
 					if (event.shiftKey) {
 						if (inList) {
-							// Shift+Tab in Liste → ausrücken
+							// Shift+Tab in list → outdent
 							event.preventDefault();
 							return liftListItem(view.state.schema.nodes.listItem)(view.state, view.dispatch);
 						}
@@ -54,12 +54,12 @@
 					}
 
 					if (inList) {
-						// Tab in Liste → einrücken
+						// Tab in list → indent
 						event.preventDefault();
 						return sinkListItem(view.state.schema.nodes.listItem)(view.state, view.dispatch);
 					}
 
-					// Tab außerhalb Liste → nächstes Formularfeld
+					// Tab outside list → next form field
 					event.preventDefault();
 					const next = document.querySelector(`[tabindex="${tabindex + 1}"]`);
 					if (next) /** @type {HTMLElement} */ (next).focus();
@@ -71,8 +71,8 @@
 
 	onDestroy(() => editor?.destroy());
 
-	// Externe value-Aenderung (z.B. Reset) in den Editor spiegeln
-	// Nur wenn der Editor nicht fokussiert ist – sonst wird der Cursor zurückgesetzt
+	// Reflect external value changes (e.g. reset) into the editor
+	// Only when the editor is not focused – otherwise the cursor is reset
 	$effect(() => {
 		if (editor && !editor.isDestroyed && !editor.isFocused) {
 			const current = editor.getHTML();
@@ -87,7 +87,7 @@
 		editor?.chain().focus()[command]().run();
 	}
 
-	// Reaktive Toolbar-Zustaende
+	// Reactive toolbar states
 	let isBold      = $state(false);
 	let isUnderline = $state(false);
 	let isBullet    = $state(false);
@@ -130,7 +130,7 @@
 			tabindex="-1"
 			onclick={() => cmd('toggleBold')}
 			class="toolbar-btn font-bold {isBold ? 'active' : ''}"
-			title="Fett (Strg+B)"
+			title="Bold (Ctrl+B)"
 		>B</button>
 
 		<button
@@ -138,7 +138,7 @@
 			tabindex="-1"
 			onclick={() => cmd('toggleUnderline')}
 			class="toolbar-btn underline {isUnderline ? 'active' : ''}"
-			title="Unterstrichen (Strg+U)"
+			title="Underline (Ctrl+U)"
 		>U</button>
 
 		<div class="w-px h-4 bg-gray-200 mx-1"></div>
@@ -148,7 +148,7 @@
 			tabindex="-1"
 			onclick={() => cmd('toggleBulletList')}
 			class="toolbar-btn {isBullet ? 'active' : ''}"
-			title="Aufzaehlungsliste"
+			title="Bullet list"
 		>&#8226; Liste</button>
 
 		<button
@@ -156,7 +156,7 @@
 			tabindex="-1"
 			onclick={() => cmd('toggleOrderedList')}
 			class="toolbar-btn {isOrdered ? 'active' : ''}"
-			title="Nummerierte Liste"
+			title="Ordered list"
 		>1. Liste</button>
 
 		{#if isInList}
@@ -167,7 +167,7 @@
 				tabindex="-1"
 				onclick={outdentList}
 				class="toolbar-btn"
-				title="Ausrücken (Shift+Tab)"
+				title="Outdent (Shift+Tab)"
 			>&#8676;</button>
 
 			<button
@@ -175,12 +175,12 @@
 				tabindex="-1"
 				onclick={indentList}
 				class="toolbar-btn"
-				title="Einrücken (Tab)"
+				title="Indent (Tab)"
 			>&#8677;</button>
 		{/if}
 	</div>
 
-	<!-- Editor-Bereich -->
+	<!-- Editor area -->
 	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 	<div
 		bind:this={editorEl}
@@ -192,16 +192,16 @@
 </div>
 
 <style>
-	/* Browser-Outline des contenteditable entfernen */
+	/* Remove browser outline of contenteditable */
 	.rich-editor :global(.tiptap) { outline: none; }
 
-	/* Listen-Styling */
+	/* List styling */
 	.rich-editor :global(ul) { list-style: disc; padding-left: 1.25rem; }
 	.rich-editor :global(ol) { list-style: decimal; padding-left: 1.25rem; }
 	.rich-editor :global(li) { margin: 0.1rem 0; }
 	.rich-editor :global(li > p) { margin: 0; }
 
-	/* Toolbar-Buttons */
+	/* Toolbar buttons */
 	:global(.toolbar-btn) {
 		padding: 0.15rem 0.5rem;
 		border-radius: 0.25rem;

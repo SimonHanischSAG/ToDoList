@@ -1,5 +1,5 @@
 <!--
-  Haupt-Seite: Task-Liste mit Filter, Suche und Score-Anzeige
+  Main page: task list with filter, search and score display
 -->
 <script>
 	import { onMount } from 'svelte';
@@ -18,7 +18,7 @@
 	onMount(() => {
 		if (!browser) return;
 		function handleKey(e) {
-			// Ctrl+Y – neuen Task öffnen (nur wenn kein Modal offen und kein Input fokussiert)
+			// Ctrl+Y – open new task (only when no modal is open and no input is focused)
 			if (e.ctrlKey && e.key === 'y' && !showForm) {
 				const tag = document.activeElement?.tagName;
 				if (tag !== 'INPUT' && tag !== 'TEXTAREA' && !document.activeElement?.closest('[contenteditable]')) {
@@ -34,7 +34,7 @@
 
 <div class="max-w-3xl mx-auto px-4 py-4">
 
-	<!-- Sync-Indicator -->
+	<!-- Sync indicator -->
 	{#if tasks.syncing}
 		<div class="bg-blue-50 border border-blue-200 text-blue-800 text-xs px-3 py-2 rounded mb-3">
 			⟳ Syncing with Box...
@@ -57,7 +57,7 @@
 		</div>
 	{/if}
 
-	<!-- Aktionsleiste -->
+	<!-- Action bar -->
 	<div class="flex gap-2 mb-4">
 		<button
 			onclick={() => { showFocus = !showFocus; if (showFocus) showVerbose = false; }}
@@ -76,7 +76,7 @@
 		</button>
 		<button
 			onclick={() => showForm = true}
-			title="Neuen Task erstellen (Ctrl+Y)"
+			title="New task (Ctrl+Y)"
 			class="relative group bg-white border border-ibm-gray-dark text-ibm-text text-sm font-semibold py-2 px-4 rounded-md hover:bg-ibm-gray transition-colors"
 		>
 			+ New
@@ -87,23 +87,23 @@
 	</div>
 
 	{#if showFocus}
-		<!-- Focus-Modus: Nur die Top-5 für heute -->
+		<!-- Focus mode: top-5 tasks for today -->
 		<FocusView />
 	{:else}
-		<!-- Normale Listenansicht -->
+		<!-- Standard list view -->
 		<div class="mb-4 space-y-2">
-			<!-- Suche -->
+			<!-- Search -->
 			<input
 				type="search"
 				placeholder="Search tasks..."
 				bind:value={tasks.searchQuery}
 				class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
 			/>
-			<!-- Area-Filter -->
+			<!-- Area filter -->
 			<AreaFilter />
 		</div>
 
-		<!-- Statistik-Zeile -->
+		<!-- Stats row -->
 		<div class="text-xs text-ibm-text-muted mb-3 flex items-center justify-between">
 			<span>
 				{tasks.filtered.length} open task{tasks.filtered.length === 1 ? '' : 's'}
@@ -150,7 +150,7 @@
 			</ul>
 		{/if}
 
-		<!-- Erledigte Tasks -->
+		<!-- Completed tasks -->
 		{#if tasks.showDone && tasks.filteredDone.length > 0}
 			<div class="mt-6">
 				<h3 class="text-xs font-semibold text-ibm-text-muted uppercase tracking-wide mb-2">
@@ -174,7 +174,7 @@
 	{/if}
 </div>
 
-<!-- Neue-Task-Modal -->
+<!-- New task modal -->
 {#if showForm}
 	<TaskForm onclose={() => showForm = false} />
 {/if}

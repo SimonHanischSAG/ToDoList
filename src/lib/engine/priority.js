@@ -1,29 +1,29 @@
 /**
- * Intelligente Prioritäts-Engine
- * Berechnet einen Score 0–100 für jeden Task – vollständig clientseitig, kein Server nötig.
+ * Smart priority engine
+ * Calculates a score 0–100 for each task – fully client-side, no server needed.
  *
- * Score-Formel:
+ * Score formula:
  *   score = basePrio
- *         + deadlineBoost    (je näher die Deadline, desto mehr)
- *         + dependencyBoost  (wenn andere Tasks auf mich warten)
- *         + agingBoost       (nur Critical/High: +max 10 wenn sehr alt)
- *         - agingPenalty     (ab Medium-High abwärts: je älter seit letztem Update, desto weiter hinten)
- *         - blockedPenalty   (wenn ich selbst blockiert bin)
+ *         + deadlineBoost    (the closer the deadline, the higher)
+ *         + dependencyBoost  (when other tasks are waiting on me)
+ *         + agingBoost       (Critical/High only: +max 10 when very old)
+ *         - agingPenalty     (Medium-High and below: older since last update → lower score)
+ *         - blockedPenalty   (when I am blocked myself)
  *
- * Aging-Penalty (basiert auf updatedAt):
- *   - Gilt für: medium-high, normal, low, verylow, someday
- *   - Critical / High: kein Aging-Einfluss
- *   - Nach ~3 Monaten (13 Wochen): ca. 1 Kategorie tiefer im Score
- *   - Nach ~6 Monaten (26 Wochen): ca. 2 Kategorien tiefer (Maximum, danach kein weiterer Abfall)
- *   - "1 Kategorie" = Abstand zwischen zwei benachbarten basePrio-Werten (≈ 10 Punkte)
+ * Aging penalty (based on updatedAt):
+ *   - Applies to: medium-high, normal, low, verylow, someday
+ *   - Critical / High: no aging effect
+ *   - After ~3 months (13 weeks): approx. 1 category lower in score
+ *   - After ~6 months (26 weeks): approx. 2 categories lower (maximum, no further drop)
+ *   - "1 category" = gap between two adjacent basePrio values (≈ 10 points)
  */
 
 /** @import { Task } from './task.js' */
 
 /**
- * Basis-Scores der 7 Prio-Stufen.
- * Abstände bewusst gleichmäßig (10 Punkte), damit Aging-Penalty
- * in "Kategorie-Sprüngen" intuitiv ablesbar ist.
+ * Base scores for the 7 priority levels.
+ * Gaps are intentionally equal (10 points) so that the aging penalty
+ * is intuitively readable in "category jumps".
  */
 const PRIO_BASE = {
 	critical:    90,
@@ -36,48 +36,48 @@ const PRIO_BASE = {
 };
 
 /**
- * Ab dieser Prio-Stufe gilt der Aging-Penalty (absteigend inkl.).
- * Critical und High sind ausgenommen.
+ * Priority levels subject to aging penalty (descending inclusive).
+ * Critical and High are exempt.
  */
 const AGING_PENALTY_PRIOS = new Set(['medium-high', 'normal', 'low', 'verylow', 'someday']);
 
 /**
- * Maximaler Aging-Penalty in Score-Punkten (= 2 Kategorien à 10 Punkte).
- * Ein Task kann nie weiter als 2 Stufen durch Aging fallen.
+ * Maximum aging penalty in score points (= 2 categories × 10 points).
+ * A task can never drop more than 2 levels due to aging.
  */
 const MAX_AGING_PENALTY = 20;
 
 /**
- * Wochen bis zum Erreichen von 1 Kategorie Penalty.
- * 13 Wochen ≈ 3 Monate → -10 Punkte (1 Kategorie).
- * 26 Wochen ≈ 6 Monate → -20 Punkte (2 Kategorien = Maximum).
+ * Weeks until 1 category penalty is reached.
+ * 13 weeks ≈ 3 months → -10 points (1 category).
+ * 26 weeks ≈ 6 months → -20 points (2 categories = maximum).
  */
 const WEEKS_PER_CATEGORY = 13;
 
 /**
- * Berechnet den Score für einen einzelnen Task.
+ * Calculates the score for a single task.
  * @param {Task} task
- * @param {Task[]} allTasks - alle offenen Tasks (für Dependency-Berechnung)
- * @returns {number} Score zwischen 0 und 100
+ * @param {Task[]} allTasks - all open tasks (for dependency calculation)
+ * @returns {number} Score between 0 and 100
  */
 export function calcScore(task, allTasks) {
 	if (task.status !== 'open') return 0;
 
 	let score = PRIO_BASE[task.priority] ?? 45;
 
-	// 1. Deadline-Boost (granular nach exakten Tagen, damit "heute" > "in 1 Tag" > "in 2 Tagen" usw.)
+	// 1. Deadline boost (granular by exact days, so "today" > "in 1 day" > "in 2 days" etc.)
 	if (task.dueDate) {
 		const daysLeft = daysDiff(new Date(), localEndOfDay(task.dueDate));
-		if (daysLeft < 0)        score += 25; // überfällig
-		else if (daysLeft === 0) score += 22; // heute
-		else if (daysLeft === 1) score += 20; // morgen
-		else if (daysLeft === 2) score += 18; // übermorgen
+		if (daysLeft < 0)        score += 25; // overdue
+		else if (daysLeft === 0) score += 22; // today
+		else if (daysLeft === 1) score += 20; // tomorrow
+		else if (daysLeft === 2) score += 18; // day after tomorrow
 		else if (daysLeft === 3) score += 16;
 		else if (daysLeft <= 7)  score += 10;
 		else if (daysLeft <= 14) score += 5;
 	}
 
-	// 2. Dependency-Boost: Bin ich ein Blocker für andere?
+	// 2. Dependency boost: am I a blocker for others?
 	const isBlockerFor = allTasks.filter(
 		(t) => t.status === 'open' && t.blockedBy.includes(task.id)
 	);
@@ -85,23 +85,23 @@ export function calcScore(task, allTasks) {
 		score += Math.min(15, isBlockerFor.length * 5);
 	}
 
-	// 3. Aging – abhängig von der Prio-Stufe
+	// 3. Aging – depends on priority level
 	const weeksOld = Math.floor(
 		daysDiff(new Date(task.updatedAt ?? task.createdAt), new Date()) / 7
 	);
 
 	if (AGING_PENALTY_PRIOS.has(task.priority)) {
-		// Medium-High und niedriger: Penalty je älter seit letztem Update
-		// Wächst linear bis zum Maximum (2 Kategorien = 20 Punkte)
+		// Medium-High and below: penalty grows linearly with age since last update
+		// grows linearly to the maximum (2 categories = 20 points)
 		const penalty = Math.min(MAX_AGING_PENALTY, Math.floor(weeksOld / WEEKS_PER_CATEGORY) * 10);
 		score -= penalty;
 	} else {
-		// Critical / High: kleiner Boost für sehr alte offene Tasks (max +10)
-		// damit wirklich vergessene dringende Tasks trotzdem sichtbar bleiben
+		// Critical / High: small boost for very old open tasks (max +10)
+		// so truly forgotten urgent tasks remain visible
 		score += Math.min(10, Math.floor(weeksOld / 4));
 	}
 
-	// 4. Blocked-Penalty: Bin ich selbst blockiert?
+	// 4. Blocked penalty: am I blocked myself?
 	const isBlocked = task.blockedBy.some((id) => {
 		const blocker = allTasks.find((t) => t.id === id);
 		return blocker && blocker.status === 'open';
@@ -112,9 +112,9 @@ export function calcScore(task, allTasks) {
 }
 
 /**
- * Berechnet Scores für alle Tasks und gibt sie sortiert zurück.
+ * Calculates scores for all tasks and returns them sorted.
  * @param {Task[]} tasks
- * @returns {Task[]} Tasks mit aktualisiertem score, absteigend sortiert
+ * @returns {Task[]} Tasks with updated score, sorted descending
  */
 export function rankTasks(tasks) {
 	const open = tasks.filter((t) => t.status === 'open');
@@ -124,7 +124,7 @@ export function rankTasks(tasks) {
 }
 
 /**
- * Täglicher Focus-Modus: Top-N Tasks für den aktiven Kontext.
+ * Daily focus mode: top-N tasks for the active context.
  * @param {Task[]} tasks
  * @param {{ area?: string; maxItems?: number }} options
  * @returns {Task[]}
@@ -140,7 +140,7 @@ export function getFocusTasks(tasks, { area = '', maxItems = 5 } = {}) {
 }
 
 /**
- * Gibt alle verfügbaren Areas (Umfelder) aus den Tasks zurück.
+ * Returns all available areas from the tasks.
  * @param {Task[]} tasks
  * @returns {string[]}
  */
@@ -149,7 +149,7 @@ export function getAreas(tasks) {
 }
 
 /**
- * Gibt alle verwendeten Themen aus den Tasks zurück.
+ * Returns all topics used across the tasks.
  * @param {Task[]} tasks
  * @returns {string[]}
  */
@@ -166,8 +166,8 @@ function isBlocked(task, allTasks) {
 }
 
 /**
- * Sekundäre Sortierung nach Due-Date: früher fällig = weiter oben.
- * Tasks ohne Due-Date kommen nach Tasks mit Due-Date.
+ * Secondary sort by due date: earlier due date = higher up.
+ * Tasks without a due date come after tasks with one.
  * @param {Task} a @param {Task} b @returns {number}
  */
 function dueDateSort(a, b) {
@@ -178,8 +178,8 @@ function dueDateSort(a, b) {
 }
 
 /** @param {Date} from @param {Date} to @returns {number} */
-/** Parst "YYYY-MM-DD" als lokales Ende des Tages (23:59:59),
- *  damit ein heutiges Datum nicht als überfällig gilt. */
+/** Parses "YYYY-MM-DD" as local end-of-day (23:59:59),
+ *  so that today's date is not considered overdue. */
 function localEndOfDay(dateStr) {
 	const [y, m, d] = String(dateStr).split('-').map(Number);
 	return new Date(y, m - 1, d, 23, 59, 59, 999);

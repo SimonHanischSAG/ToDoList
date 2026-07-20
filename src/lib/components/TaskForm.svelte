@@ -1,7 +1,7 @@
 <!--
-  TaskForm – Modal zum Erstellen oder Bearbeiten eines Tasks
-  Wird mit task-Prop aufgerufen → Edit-Modus (vorausgefüllt)
-  Wird ohne task-Prop aufgerufen → Neu-Modus (leer)
+  TaskForm – modal for creating or editing a task
+  Called with task prop → edit mode (pre-filled)
+  Called without task prop → new task mode (empty)
 -->
 <script>
 	import { onMount } from 'svelte';
@@ -19,12 +19,12 @@
 	/** @type {HTMLInputElement} */
 	let titleEl;
 
-	// Autofocus: programmatisch fokussieren – autofocus-Attribut funktioniert
-	// in <dialog>-Elementen nicht zuverlässig in allen Browsern
+	// Autofocus: focus programmatically – autofocus attribute does not work
+	// reliably inside <dialog> elements across all browsers
 	onMount(() => titleEl?.focus());
 
 
-	// task-Prop ist beim Öffnen fix → einmalige Initialisierung ist korrekt
+	// task prop is fixed when opening → one-time initialisation is correct
 	const t      = task;
 	const isEdit = !!t;
 
@@ -39,7 +39,7 @@
 	let tagInput    = $state('');
 	let saving      = $state(false);
 
-	/** Vorschläge: alle bekannten Tags, gefiltert nach aktuellem Eingabewert */
+	/** Suggestions: all known tags, filtered by current input value */
 	const tagSuggestions = $derived(
 		tagInput.trim().length === 0
 			? []
@@ -48,7 +48,7 @@
 			)
 	);
 
-	/** Tag hinzufügen (Duplikate verhindern) */
+	/** Add a tag (prevent duplicates) */
 	function addTag(value) {
 		const v = value.trim().replace(/^#+/, '');
 		if (v && !tags.includes(v)) tags = [...tags, v];
@@ -69,7 +69,7 @@
 	}
 	let markAsDone = $state(false);
 
-	/** Gibt ein Datum als YYYY-MM-DD-String zurück */
+	/** Returns a date as a YYYY-MM-DD string */
 	function toDateStr(date) {
 		return date.toISOString().slice(0, 10);
 	}
@@ -295,7 +295,7 @@
 						list="tag-suggestions"
 						onkeydown={handleTagKeydown}
 						onchange={() => { if (tagInput.trim()) addTag(tagInput); }}
-						placeholder="Tag eingeben, Enter oder , zum Hinzufügen…"
+						placeholder="Enter tag, press Enter or , to add…"
 						tabindex="7"
 						class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
 					/>

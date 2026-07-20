@@ -1,6 +1,6 @@
 <!--
-  TaskCard – zeigt einen einzelnen Task in der Liste an
-  Klick auf Titel → Inline-Edit-Modus
+  TaskCard – displays a single task in the list
+  Click → opens edit modal
 -->
 <script>
 	import TaskForm from './TaskForm.svelte';
@@ -49,8 +49,8 @@
 		return 'bg-gray-300';
 	}
 
-	/** Parst "YYYY-MM-DD" als lokale Mitternacht (nicht UTC), damit ein
-	 *  heutiges Datum erst nach 23:59:59 Ortszeit als überfällig gilt. */
+	/** Parses "YYYY-MM-DD" as local end-of-day (not UTC), so that
+	 *  today's date is only considered overdue after 23:59:59 local time. */
 	function localEndOfDay(dateStr) {
 		const [y, m, d] = dateStr.split('-').map(Number);
 		return new Date(y, m - 1, d, 23, 59, 59, 999);
@@ -107,9 +107,9 @@
 						{task.title || '(no title)'}
 					</div>
 
-				<!-- Meta-Zeile -->
+				<!-- Meta row -->
 					<div class="flex flex-wrap items-center gap-1.5 mt-1.5">
-						<!-- Priorität + Pfeile -->
+						<!-- Priority + arrows -->
 						<span class="text-xs border px-2 py-0.5 rounded inline-block text-center w-20 whitespace-nowrap {PRIORITY_COLORS[task.priority]}">
 							{PRIORITY_LABELS[task.priority]}
 						</span>
@@ -128,7 +128,7 @@
 							>&#8681;</button>
 						</div>
 						<span class="w-2"></span>
-						<!-- Umfeld + Thema -->
+						<!-- Area + topic -->
 						{#if task.area}
 							<span class="text-xs bg-ibm-gray text-ibm-text-muted px-2 py-0.5 rounded">{task.area}</span>
 						{/if}
@@ -183,7 +183,7 @@
 				{/if}
 			</div>
 
-			<!-- Aktionen: Details + Löschen -->
+			<!-- Actions: details + delete -->
 				<div class="flex items-center gap-1 flex-shrink-0">
 					{#if !verbose && (task.description || task.comments || task.tags.length > 0)}
 						<button

@@ -54,7 +54,7 @@
 						</div>
 					</div>
 
-					<!-- Erledigt-Button -->
+					<!-- Done button -->
 					<button
 						onclick={(e) => { e.stopPropagation(); setStatus(task.id, 'done'); }}
 						class="flex-shrink-0 text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-1 rounded hover:bg-green-100 transition-colors"

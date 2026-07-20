@@ -1,10 +1,10 @@
 /**
- * Lokale Datenbank (IndexedDB via Dexie.js)
+ * Local database (IndexedDB via Dexie.js)
  *
- * Dient als lokaler Cache für die Todos – ermöglicht:
- * - Offline-Nutzung (App funktioniert ohne Internet)
- * - Schnelle Lesezugriffe ohne Graph-API-Calls
- * - Sync-Queue für fehlgeschlagene OneDrive-Uploads
+ * Acts as a local cache for todos – enables:
+ * - Offline usage (app works without internet)
+ * - Fast reads without API calls
+ * - Sync queue for failed uploads
  */
 
 import Dexie from 'dexie';
@@ -12,8 +12,8 @@ import Dexie from 'dexie';
 export const db = new Dexie('IBMTodoApp');
 
 db.version(1).stores({
-	// tasks: id als Primary Key, indizierte Felder für schnelle Filter/Sortierung
+	// tasks: id as primary key, indexed fields for fast filtering/sorting
 	tasks: 'id, status, priority, area, customer, dueDate, score, updatedAt',
-	// syncQueue: ausstehende Uploads nach OneDrive
+	// syncQueue: pending uploads
 	syncQueue: '++id, timestamp'
 });

@@ -1,20 +1,20 @@
 /**
- * Storage-Konfiguration
+ * Storage configuration
  *
- * Hier wird festgelegt welches Storage-Backend aktiv ist.
+ * Defines which storage backend is active.
  *
- * ── Auf Box umschalten (sobald IBM-Freigabe vorliegt) ──────────────────────
- * 1. Diese Zeile auskommentieren:   export { syncFromLocal as syncFromStorage, ... } from './local.js';
- * 2. Diese Zeile aktivieren:        export { syncFromBox as syncFromStorage, ... } from './box.js';
- * 3. Commit + Push → fertig.
+ * ── Switch to Box (once IBM access is available) ───────────────────────────
+ * 1. Comment out this line:   export { syncFromLocal as syncFromStorage, ... } from './local.js';
+ * 2. Activate this line:      export { syncFromBox as syncFromStorage, ... } from './box.js';
+ * 3. Commit + Push → done.
  * ──────────────────────────────────────────────────────────────────────────
  */
 
-// Aktives Backend: Box Cloud-Sync
+// Active backend: Box cloud sync
 export { syncFromBox as syncFromStorage, schedulePush, retryFailedSyncs, startPolling, stopPolling, loadPrefs, savePrefs, schedulePrefs } from './box.js';
 
-// Export/Import-Funktionen werden immer aus local.js bereitgestellt (unabhängig vom Backend)
+// Export/Import functions are always provided from local.js (independent of backend)
 export { exportToFile, importFromFile } from './local.js';
 
-// Lokaler Storage (Fallback, kein Login, kein Cloud-Sync):
+// Local storage (fallback, no login, no cloud sync):
 // export { syncFromLocal as syncFromStorage, schedulePush, retryFailedSyncs, exportToFile, importFromFile } from './local.js';

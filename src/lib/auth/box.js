@@ -1,15 +1,15 @@
 /**
- * Box OAuth 2.0 Authentifizierung (PKCE-Flow)
+ * Box OAuth 2.0 authentication (PKCE flow)
  *
- * Jeder Nutzer loggt sich mit seinem eigenen IBM Box-Account ein.
- * Daten werden in seinem persönlichen Box-Ordner gespeichert.
+ * Each user logs in with their own IBM Box account.
+ * Data is stored in their personal Box folder.
  *
- * PKCE-Flow: kein Client Secret nötig – sicher für SPAs.
+ * PKCE flow: no client secret needed – secure for SPAs.
  */
 
 import { browser } from '$app/environment';
 
-// ── Konfiguration ──────────────────────────────────────────────────────────
+// ── Configuration ──────────────────────────────────────────────────────────
 const CLIENT_ID     = import.meta.env.VITE_BOX_CLIENT_ID     ?? '57mjnjrkdl2787qrsbcmk3zczhwa2en6';
 const CLIENT_SECRET = import.meta.env.VITE_BOX_CLIENT_SECRET ?? '';
 const REDIRECT_URI = browser
@@ -23,27 +23,27 @@ const STORAGE_KEY_TOKEN   = 'box_access_token';
 const STORAGE_KEY_REFRESH = 'box_refresh_token';
 const STORAGE_KEY_VERIFIER = 'box_pkce_verifier';
 const STORAGE_KEY_USER    = 'box_user';
-const STORAGE_KEY_EXPIRY  = 'box_token_expiry'; // Unix-Timestamp (ms) des Token-Ablaufs
+const STORAGE_KEY_EXPIRY  = 'box_token_expiry'; // Unix timestamp (ms) of token expiry
 
-// Wieviele Millisekunden vor Ablauf der Token proaktiv erneuert wird
-const REFRESH_AHEAD_MS = 5 * 60 * 1000; // 5 Minuten
+// How many milliseconds before expiry the token is proactively refreshed
+const REFRESH_AHEAD_MS = 5 * 60 * 1000; // 5 minutes
 
-// Laufender Refresh-Promise (verhindert parallele Refresh-Requests)
+// Running refresh promise (prevents parallel refresh requests)
 let _refreshPromise = /** @type {Promise<boolean> | null} */ (null);
 
-// Proaktiver Refresh-Timer
+// Proactive refresh timer
 let _refreshTimer = /** @type {ReturnType<typeof setTimeout> | null} */ (null);
 
 // ── PKCE Helpers ───────────────────────────────────────────────────────────
 
-/** Generiert einen zufälligen Code Verifier (43–128 Zeichen) */
+/** Generates a random code verifier (43–128 characters) */
 function generateVerifier() {
 	const array = new Uint8Array(64);
 	crypto.getRandomValues(array);
 	return base64url(array);
 }
 
-/** Berechnet den SHA-256 Code Challenge aus dem Verifier */
+/** Calculates the SHA-256 code challenge from the verifier */
 async function generateChallenge(verifier) {
 	const encoder = new TextEncoder();
 	const data = encoder.encode(verifier);
@@ -51,7 +51,7 @@ async function generateChallenge(verifier) {
 	return base64url(new Uint8Array(digest));
 }
 
-/** URL-sichere Base64-Kodierung ohne Padding */
+/** URL-safe Base64 encoding without padding */
 function base64url(buffer) {
 	return btoa(String.fromCharCode(...buffer))
 		.replace(/\+/g, '-')
@@ -59,11 +59,11 @@ function base64url(buffer) {
 		.replace(/=/g, '');
 }
 
-// ── Öffentliche API ────────────────────────────────────────────────────────
+// ── Public API ─────────────────────────────────────────────────────────────
 
 /**
- * Startet den Box Login-Redirect (PKCE).
- * Speichert den Verifier in sessionStorage für den Token-Tausch nach dem Redirect.
+ * Starts the Box login redirect (PKCE).
+ * Saves the verifier in sessionStorage for the token exchange after the redirect.
  */
 export async function login() {
 	const verifier  = generateVerifier();
@@ -84,10 +84,10 @@ export async function login() {
 }
 
 /**
- * Verarbeitet den Redirect nach dem Box-Login.
- * Tauscht den Authorization Code gegen ein Access Token.
- * Wird beim App-Start aufgerufen.
- * @returns {Promise<boolean>} true wenn Login erfolgreich
+ * Processes the redirect after Box login.
+ * Exchanges the authorization code for an access token.
+ * Called on app start.
+ * @returns {Promise<boolean>} true if login was successful
  */
 export async function handleRedirect() {
 	if (!browser) return false;
@@ -98,7 +98,7 @@ export async function handleRedirect() {
 
 	if (!code || !verifier) return false;
 
-	// URL bereinigen (code aus der Adressleiste entfernen)
+	// Clean up URL (remove code from address bar)
 	window.history.replaceState({}, '', window.location.pathname);
 	sessionStorage.removeItem(STORAGE_KEY_VERIFIER);
 
@@ -118,21 +118,21 @@ export async function handleRedirect() {
 	});
 
 	if (!res.ok) {
-		console.error('[Box Auth] Token-Tausch fehlgeschlagen:', await res.text());
+		console.error('[Box Auth] Token exchange failed:', await res.text());
 		return false;
 	}
 
 	const data = await res.json();
 	saveTokens(data);
 
-	// Lokalen Task-Cache leeren – Box ist die führende Quelle
+	// Clear local task cache – Box is the leading source
 	localStorage.removeItem('ibmtodo_local');
 
 	return true;
 }
 
 /**
- * Gibt das gespeicherte Access Token zurück.
+ * Returns the stored access token.
  * @returns {string | null}
  */
 export function getToken() {
@@ -141,8 +141,8 @@ export function getToken() {
 }
 
 /**
- * Startet einen proaktiven Refresh-Timer, der das Token kurz vor Ablauf erneuert.
- * Wird nach jedem erfolgreichen Token-Erhalt aufgerufen.
+ * Starts a proactive refresh timer that renews the token shortly before it expires.
+ * Called after every successful token acquisition.
  */
 export function startTokenRefreshTimer() {
 	if (!browser) return;
@@ -153,25 +153,25 @@ export function startTokenRefreshTimer() {
 
 	const msUntilRefresh = expiry - Date.now() - REFRESH_AHEAD_MS;
 	if (msUntilRefresh <= 0) {
-		// Token bereits abgelaufen oder kurz vor Ablauf → sofort refreshen
+		// Token already expired or about to expire → refresh immediately
 		refreshToken();
 		return;
 	}
 
 	_refreshTimer = setTimeout(async () => {
 		_refreshTimer = null;
-		console.info('[Box Auth] Proaktiver Token-Refresh …');
+		console.info('[Box Auth] Proactive token refresh…');
 		const ok = await refreshToken();
 		if (ok) {
-			startTokenRefreshTimer(); // neuen Timer für das frische Token setzen
+			startTokenRefreshTimer(); // set new timer for the fresh token
 		} else {
-			console.warn('[Box Auth] Proaktiver Refresh fehlgeschlagen – Nutzer muss sich neu einloggen.');
+			console.warn('[Box Auth] Proactive refresh failed – user must sign in again.');
 		}
 	}, msUntilRefresh);
 }
 
 /**
- * Stoppt den proaktiven Refresh-Timer (z.B. beim Logout).
+ * Stops the proactive refresh timer (e.g. on logout).
  */
 export function stopTokenRefreshTimer() {
 	if (_refreshTimer) {
@@ -181,13 +181,13 @@ export function stopTokenRefreshTimer() {
 }
 
 /**
- * Erneuert das Access Token still im Hintergrund via Refresh Token.
- * @returns {Promise<boolean>} true wenn erfolgreich
+ * Silently renews the access token in the background via refresh token.
+ * @returns {Promise<boolean>} true if successful
  */
 export async function refreshToken() {
 	if (!browser) return false;
 
-	// Parallele Refresh-Requests verhindern
+	// Prevent parallel refresh requests
 	if (_refreshPromise) return _refreshPromise;
 
 	const refresh = localStorage.getItem(STORAGE_KEY_REFRESH);
@@ -221,7 +221,7 @@ export async function refreshToken() {
 }
 
 /**
- * Gibt den eingeloggten Nutzer zurück.
+ * Returns the currently logged-in user, or null.
  * @returns {{ name: string, login: string } | null}
  */
 export function getUser() {
@@ -231,7 +231,7 @@ export function getUser() {
 }
 
 /**
- * Loggt den Nutzer aus (löscht lokalen State).
+ * Logs the user out (clears local state).
  */
 export function logout() {
 	stopTokenRefreshTimer();
@@ -239,22 +239,22 @@ export function logout() {
 	localStorage.removeItem(STORAGE_KEY_REFRESH);
 	localStorage.removeItem(STORAGE_KEY_EXPIRY);
 	localStorage.removeItem(STORAGE_KEY_USER);
-	// Box hat keine Server-seitige Logout-URL für SPAs
+	// Box has no server-side logout URL for SPAs
 	window.location.reload();
 }
 
-// ── Interne Helpers ────────────────────────────────────────────────────────
+// ── Internal helpers ───────────────────────────────────────────────────────
 
 /**
- * Speichert Access + Refresh Token aus einer Token-Response.
- * Berechnet und speichert auch den Ablaufzeitpunkt des Access Tokens.
+ * Saves access + refresh token from a token response.
+ * Also calculates and stores the access token expiry timestamp.
  * @param {Record<string, string>} data
  */
 function saveTokens(data) {
 	if (data.access_token)  localStorage.setItem(STORAGE_KEY_TOKEN,   data.access_token);
 	if (data.refresh_token) localStorage.setItem(STORAGE_KEY_REFRESH, data.refresh_token);
 
-	// Box liefert expires_in in Sekunden (Standard: 3600 = 1h)
+	// Box returns expires_in in seconds (default: 3600 = 1h)
 	const expiresIn = parseInt(String(data.expires_in ?? '3600'), 10);
 	const expiry = Date.now() + expiresIn * 1000;
 	localStorage.setItem(STORAGE_KEY_EXPIRY, String(expiry));
@@ -262,4 +262,3 @@ function saveTokens(data) {
 	const userName = data.token_extra_info?.name ?? null;
 	if (userName) localStorage.setItem(STORAGE_KEY_USER, JSON.stringify({ name: userName, login: '' }));
 }
-

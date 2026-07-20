@@ -1,68 +1,68 @@
 /**
- * IBM w3id / Azure AD Authentifizierung via MSAL.js (PKCE-Flow)
+ * IBM w3id / Azure AD authentication via MSAL.js (PKCE flow)
  *
- * IBM-Mitarbeiter haben @ibm.com = Microsoft Entra ID (Azure AD).
- * MSAL.js v3 erledigt den PKCE-Flow vollständig im Browser – kein Backend nötig.
+ * IBM employees have @ibm.com = Microsoft Entra ID (Azure AD).
+ * MSAL.js v3 handles the PKCE flow entirely in the browser – no backend needed.
  *
- * Setup (einmalig, vom Entwickler):
+ * Setup (one-time, by the developer):
  *   1. Azure Portal → App Registrations → New Registration
  *      - Name: "IBM Todo App"
  *      - Supported account types: "Accounts in any organizational directory"
  *      - Redirect URI: https://simonhanischsag.github.io/ToDoList/
  *   2. API permissions → Microsoft Graph → Files.ReadWrite (delegated)
- *   3. Client ID in AUTH_CONFIG.clientId eintragen
+ *   3. Enter the Client ID in AUTH_CONFIG.clientId
  *
- * Datenschutz: Kein Client Secret, keine Tokens am Server.
+ * Privacy: no client secret, no tokens on the server.
  */
 
 import { PublicClientApplication, InteractionRequiredAuthError } from '@azure/msal-browser';
 import { browser } from '$app/environment';
 
-// ── Konfiguration ──────────────────────────────────────────────────────────
+// ── Configuration ──────────────────────────────────────────────────────────
 const AUTH_CONFIG = {
 	auth: {
-		// TODO: Ersetze mit deiner Azure App Registration Client ID
+		// TODO: Replace with your Azure App Registration Client ID
 		clientId: import.meta.env.VITE_AZURE_CLIENT_ID ?? 'YOUR_CLIENT_ID_HERE',
-		// IBM nutzt den gemeinsamen Microsoft-Tenant (Multi-Tenant)
+		// IBM uses the shared Microsoft tenant (multi-tenant)
 		authority: 'https://login.microsoftonline.com/organizations',
-		// Muss exakt mit der registrierten Redirect URI übereinstimmen
+		// Must exactly match the registered redirect URI
 		redirectUri: typeof window !== 'undefined' ? window.location.origin + window.location.pathname : '/',
 		postLogoutRedirectUri: '/'
 	},
 	cache: {
-		cacheLocation: 'sessionStorage', // sicherer als localStorage (kein XSS-Risiko)
+		cacheLocation: 'sessionStorage', // safer than localStorage (no XSS risk)
 		storeAuthStateInCookie: false
 	}
 };
 
-// Scopes: OpenID für Login + Microsoft Graph für OneDrive-Zugriff
+// Scopes: OpenID for login + Microsoft Graph for OneDrive access
 export const LOGIN_SCOPES = ['openid', 'profile', 'email'];
 export const GRAPH_SCOPES = ['Files.ReadWrite', 'User.Read'];
 
-// ── MSAL-Instanz (Singleton) ───────────────────────────────────────────────
+// ── MSAL instance (singleton) ──────────────────────────────────────────────
 /** @type {PublicClientApplication | null} */
 let msalInstance = null;
 
 /**
- * Gibt die MSAL-Instanz zurück (lazy init, nur im Browser).
+ * Returns the MSAL instance (lazy init, browser only).
  * @returns {Promise<PublicClientApplication>}
  */
 async function getMsal() {
-	if (!browser) throw new Error('MSAL nur im Browser verfügbar');
+	if (!browser) throw new Error('MSAL is only available in the browser');
 	if (!msalInstance) {
 		msalInstance = new PublicClientApplication(AUTH_CONFIG);
 		await msalInstance.initialize();
-		// Verarbeite Redirect-Response nach Login
+		// Process redirect response after login
 		await msalInstance.handleRedirectPromise();
 	}
 	return msalInstance;
 }
 
-// ── Öffentliche API ────────────────────────────────────────────────────────
+// ── Public API ─────────────────────────────────────────────────────────────
 
 /**
- * Startet den Login-Redirect zu IBM w3id / Microsoft.
- * Wichtig: Popup ist auf iOS blockiert → immer Redirect verwenden.
+ * Starts the login redirect to IBM w3id / Microsoft.
+ * Important: popups are blocked on iOS → always use redirect.
  */
 export async function login() {
 	const msal = await getMsal();
@@ -73,7 +73,7 @@ export async function login() {
 }
 
 /**
- * Loggt den Nutzer aus und leitet zurück zur App.
+ * Logs the user out and redirects back to the app.
  */
 export async function logout() {
 	const msal = await getMsal();
@@ -82,7 +82,7 @@ export async function logout() {
 }
 
 /**
- * Gibt den aktuell eingeloggten Account zurück, oder null.
+ * Returns the currently logged-in account, or null.
  * @returns {Promise<import('@azure/msal-browser').AccountInfo | null>}
  */
 export async function getAccount() {
@@ -95,14 +95,14 @@ export async function getAccount() {
 }
 
 /**
- * Holt ein gültiges Access Token für Microsoft Graph (silent refresh).
- * Falls nötig, wird ein neuer Redirect ausgelöst.
- * @returns {Promise<string>} Bearer Token
+ * Obtains a valid access token for Microsoft Graph (silent refresh).
+ * If needed, triggers a new redirect.
+ * @returns {Promise<string>} Bearer token
  */
 export async function getGraphToken() {
 	const msal = await getMsal();
 	const account = msal.getActiveAccount();
-	if (!account) throw new Error('Nicht eingeloggt');
+	if (!account) throw new Error('Not logged in');
 
 	try {
 		const result = await msal.acquireTokenSilent({
@@ -112,7 +112,7 @@ export async function getGraphToken() {
 		return result.accessToken;
 	} catch (err) {
 		if (err instanceof InteractionRequiredAuthError) {
-			// Token abgelaufen oder neue Zustimmung nötig → Redirect
+			// Token expired or new consent required → redirect
 			await msal.acquireTokenRedirect({ scopes: GRAPH_SCOPES, account });
 		}
 		throw err;

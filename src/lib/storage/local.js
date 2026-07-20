@@ -1,25 +1,25 @@
 /**
- * Lokaler Storage-Adapter (localStorage + IndexedDB)
+ * Local storage adapter (localStorage + IndexedDB)
  *
- * Fallback wenn Box noch nicht freigeschaltet ist.
- * Daten bleiben lokal im Browser – kein Cloud-Sync.
+ * Fallback when Box is not yet available.
+ * Data stays local in the browser – no cloud sync.
  *
- * Um später auf Box zu wechseln: in taskStore.svelte.js einfach
- * den Import von './local.js' auf './box.js' ändern.
+ * To switch to Box later: change the import in taskStore.svelte.js
+ * from './local.js' to './box.js'.
  */
 
 import { db } from './db.js';
 
 const STORAGE_KEY = 'ibmtodo_local';
 
-// Debounce-Timer
+// Debounce timer
 let uploadTimer = null;
 const DEBOUNCE_MS = 500;
 
-// ── Öffentliche API (gleiche Signatur wie box.js) ──────────────────────────
+// ── Public API (same signature as box.js) ─────────────────────────────────
 
 /**
- * Lädt Tasks aus localStorage in IndexedDB.
+ * Loads tasks from localStorage into IndexedDB.
  * @returns {Promise<void>}
  */
 export async function syncFromLocal() {
@@ -32,12 +32,12 @@ export async function syncFromLocal() {
 		await db.tasks.clear();
 		await db.tasks.bulkPut(tasks);
 	} catch (err) {
-		console.error('[LocalStorage] Laden fehlgeschlagen:', err);
+		console.error('[LocalStorage] Load failed:', err);
 	}
 }
 
 /**
- * Schreibt den aktuellen IndexedDB-Cache in localStorage.
+ * Writes the current IndexedDB cache to localStorage.
  * @returns {Promise<void>}
  */
 export async function pushToLocal() {
@@ -46,7 +46,7 @@ export async function pushToLocal() {
 }
 
 /**
- * Plant einen debounced Schreibvorgang in localStorage.
+ * Schedules a debounced write to localStorage.
  */
 export function schedulePush() {
 	if (uploadTimer) clearTimeout(uploadTimer);
@@ -54,21 +54,21 @@ export function schedulePush() {
 		try {
 			await pushToLocal();
 		} catch (err) {
-			console.error('[LocalStorage] Schreiben fehlgeschlagen:', err);
+			console.error('[LocalStorage] Write failed:', err);
 		}
 	}, DEBOUNCE_MS);
 }
 
 /**
- * Kein Retry nötig bei lokalem Storage – Stub für API-Kompatibilität mit box.js.
+ * No retry needed for local storage – stub for API compatibility with box.js.
  */
 export async function retryFailedSyncs() {
-	// nichts zu tun
+	// nothing to do
 }
 
 /**
- * Exportiert alle Tasks als JSON-Datei (Download).
- * Nützlich um Daten zwischen Geräten zu übertragen.
+ * Exports all tasks as a JSON file (download).
+ * Useful for transferring data between devices.
  */
 export async function exportToFile() {
 	const tasks = await db.tasks.toArray();
@@ -82,9 +82,9 @@ export async function exportToFile() {
 }
 
 /**
- * Importiert Tasks aus einer JSON-Datei.
+ * Imports tasks from a JSON file.
  * @param {File} file
- * @returns {Promise<number>} Anzahl importierter Tasks
+ * @returns {Promise<number>} Number of imported tasks
  */
 export async function importFromFile(file) {
 	const text = await file.text();

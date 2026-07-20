@@ -1,6 +1,6 @@
 <!--
-  Root-Layout der App
-  Box-Modus: Nutzer loggt sich mit eigenem Box-Account ein.
+  Root layout
+  Box mode: users log in with their own Box account.
 -->
 <script>
 	import '../app.css';
@@ -24,11 +24,11 @@
 	onMount(async () => {
 		if (!browser) return;
 
-		// OAuth-Redirect verarbeiten (falls gerade nach Box-Login zurückgekehrt)
+		// Process OAuth redirect (returning from Box login)
 		await handleRedirect();
 
-		// Falls kein gültiger Access Token vorhanden, aber ein Refresh Token existiert
-		// → stiller Hintergrund-Refresh (wichtig auf iPhone nach Tab-Schließen)
+		// If no valid access token but a refresh token exists
+		// → silent background refresh (important on iPhone after closing tab)
 		if (!getToken() && localStorage.getItem('box_refresh_token')) {
 			await refreshToken();
 		}
@@ -36,17 +36,17 @@
 		loggedIn = !!getToken();
 		user = getUser();
 
-		// Nach erfolgreichem Box-Login Wahl merken und Token-Refresh-Timer starten
+		// After successful Box login: save choice and start token refresh timer
 		if (loggedIn) {
 			localStorage.setItem(STORAGE_CHOICE_KEY, 'box');
 			startTokenRefreshTimer();
 		}
 
-		// Wenn noch keine Wahl getroffen und nicht gerade eingeloggt → Prompt zeigen
+		// If no choice made yet and not logged in → show prompt
 		const choice = localStorage.getItem(STORAGE_CHOICE_KEY);
 		if (!choice && !loggedIn) {
 			showPrompt = true;
-			// App-Inhalt trotzdem schon laden (aus lokalem Cache)
+			// Load app content from local cache anyway
 			await loadTasks();
 			ready = true;
 			return;
@@ -57,13 +57,13 @@
 		ready = true;
 	});
 
-	/** Nutzer wählt lokalen Storage */
+	/** User selects local storage */
 	function chooseLocal() {
 		localStorage.setItem(STORAGE_CHOICE_KEY, 'local');
 		showPrompt = false;
 	}
 
-	/** Logout: Polling stoppen + Box-Session beenden */
+	/** Logout: stop polling + end Box session */
 	function logout() {
 		stopSync();
 		localStorage.removeItem(STORAGE_CHOICE_KEY);
@@ -72,10 +72,10 @@
 		boxLogout();
 	}
 
-	/** Formatiert einen ISO-Zeitstempel als "HH:MM" für die Statusanzeige */
+	/** Formats an ISO timestamp as "HH:MM" for the status indicator */
 	function formatTime(iso) {
 		if (!iso) return '';
-		return new Date(iso).toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' });
+		return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 	}
 
 	/** @param {Event} e */
@@ -86,13 +86,13 @@
 		const count = await importFromFile(file);
 		await loadTasks();
 		schedulePush();
-		importMsg = `${count} Tasks importiert ✓`;
+		importMsg = `${count} tasks imported ✓`;
 		showImport = false;
 		setTimeout(() => importMsg = '', 3000);
 	}
 </script>
 
-<!-- Storage-Auswahl beim ersten Start -->
+<!-- Storage selection on first launch -->
 {#if showPrompt}
 	<StoragePrompt onlocal={chooseLocal} />
 {/if}
@@ -106,29 +106,29 @@
 	</div>
 
 {:else}
-	<!-- Äußerer Wrapper: exakt Viewport-Höhe, kein eigenes Scrollen -->
+	<!-- Outer wrapper: exactly viewport height, no own scrolling -->
 	<div class="bg-ibm-gray flex flex-col" style="height: 100dvh; overflow: hidden;">
 		<header class="bg-ibm-text shadow-sm px-4 py-3 flex items-center justify-between flex-shrink-0">
 			<span class="text-white font-bold text-lg">IBM Todo</span>
 			<div class="flex items-center gap-3">
 				{#if loggedIn}
-					<!-- Eingeloggt: Export / Import / Nutzer / Logout -->
+					<!-- Logged in: Export / Import / User / Logout -->
 					<button
 						onclick={exportToFile}
 						class="text-gray-400 hover:text-white text-xs transition-colors"
-						title="Alle Tasks als JSON exportieren"
+						title="Export all tasks as JSON"
 					>
 						↓ Export
 					</button>
-					<label class="text-gray-400 hover:text-white text-xs transition-colors cursor-pointer" title="Tasks aus JSON importieren">
+					<label class="text-gray-400 hover:text-white text-xs transition-colors cursor-pointer" title="Import tasks from JSON">
 						↑ Import
 						<input type="file" accept=".json" onchange={handleImport} class="hidden" />
 					</label>
-					<!-- Sync-Indikator: zeigt letzten Remote-Sync oder aktiven Sync-Spinner -->
+					<!-- Sync indicator: shows last remote sync or active sync spinner -->
 					{#if tasks.syncing}
-						<span class="text-yellow-400 text-xs" title="Synchronisiere mit Box …">⟳ Sync…</span>
+						<span class="text-yellow-400 text-xs" title="Syncing with Box…">⟳ Sync…</span>
 					{:else if tasks.lastSync}
-						<span class="text-gray-500 text-xs" title="Zuletzt synchronisiert: {tasks.lastSync}">✓ {formatTime(tasks.lastSync)}</span>
+						<span class="text-gray-500 text-xs" title="Last synced: {tasks.lastSync}">✓ {formatTime(tasks.lastSync)}</span>
 					{/if}
 					{#if user}
 						<span class="text-gray-400 text-xs">{user.name}</span>
@@ -136,17 +136,17 @@
 					<button
 						onclick={logout}
 						class="text-gray-400 hover:text-white text-xs transition-colors"
-						title="Box-Logout"
+						title="Box logout"
 					>
 						Logout
 					</button>
 				{:else}
-					<!-- Nicht eingeloggt: Login-Button -->
+					<!-- Not logged in: login button -->
 					<button
 						onclick={login}
 						class="bg-ibm-blue hover:bg-ibm-blue-dark text-white text-xs font-semibold px-3 py-1 rounded transition-colors"
 					>
-						Mit Box anmelden
+						Sign in with Box
 					</button>
 				{/if}
 			</div>
@@ -158,7 +158,7 @@
 			</div>
 		{/if}
 
-		<!-- Scrollbarer Content-Bereich: scrollbar-gutter reserviert Platz permanent -->
+		<!-- Scrollable content area: scrollbar-gutter reserves space permanently -->
 		<main class="flex-1 min-h-0" style="overflow-y: auto; scrollbar-gutter: stable;">
 			{@render children()}
 		</main>

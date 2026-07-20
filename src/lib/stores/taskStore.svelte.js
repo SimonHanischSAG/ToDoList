@@ -1,6 +1,6 @@
 /**
- * Reaktiver Task-Store (Svelte 5 Runes)
- * Storage-Backend: Box statt OneDrive
+ * Reactive task store (Svelte 5 Runes)
+ * Storage backend: Box cloud sync
  */
 
 import { db } from '../storage/db.js';
@@ -20,7 +20,7 @@ let _loading = $state(false);
 let _syncing = $state(false);
 let _error = $state(/** @type {string | null} */ (null));
 let _sessionExpired = $state(false);
-/** Zeitstempel des letzten erfolgreichen Remote-Syncs (für UI-Indikator) */
+/** Timestamp of last successful remote sync (for UI indicator) */
 let _lastSync = $state(/** @type {string | null} */ (null));
 
 // ── Derived State ──────────────────────────────────────────────────────────
@@ -36,7 +36,7 @@ export const tasks = {
 	/** @param {string[]} v */
 	set activeAreas(v) {
 		_activeAreas = v;
-		// Aktive Topics bereinigen
+		// Remove active topics that are no longer visible
 		const visibleTopicSet = new Set(
 			_tasks
 				.filter(t => t.status === 'open' && (v.length === 0 || v.includes(t.area)) && t.topic)
@@ -46,14 +46,14 @@ export const tasks = {
 		_savePrefs();
 	},
 
-	/** Einzelne Area togglen (Mehrfachauswahl); Topics zurücksetzen wenn sie in neuer Auswahl nicht mehr existieren */
+	/** Toggle a single area (multi-select); remove topics that no longer exist in the new selection */
 	toggleArea(area) {
 		if (_activeAreas.includes(area)) {
 			_activeAreas = _activeAreas.filter(a => a !== area);
 		} else {
 			_activeAreas = [..._activeAreas, area];
 		}
-		// Aktive Topics bereinigen: nur Topics behalten, die noch sichtbar sind
+		// Keep only topics still visible after the area change
 		const visibleTopicSet = new Set(
 			_tasks
 				.filter(t => t.status === 'open' && (_activeAreas.length === 0 || _activeAreas.includes(t.area)) && t.topic)
@@ -68,7 +68,7 @@ export const tasks = {
 	/** @param {string[]} v */
 	set activeTopics(v) { _activeTopics = v; _savePrefs(); },
 
-	/** Einzelnes Topic togglen (Mehrfachauswahl) */
+	/** Toggle a single topic (multi-select) */
 	toggleTopic(topic) {
 		if (_activeTopics.includes(topic)) {
 			_activeTopics = _activeTopics.filter(t => t !== topic);
@@ -78,7 +78,7 @@ export const tasks = {
 		_savePrefs();
 	},
 
-	/** Score-Mindestgrenze für den Slider-Filter (0 = alles anzeigen) */
+	/** Minimum score threshold for the slider filter (0 = show all) */
 	get minScore() { return _minScore; },
 	set minScore(v) { _minScore = v; _savePrefs(); },
 
@@ -90,7 +90,7 @@ export const tasks = {
 	get syncing() { return _syncing; },
 	get error() { return _error; },
 	get sessionExpired() { return _sessionExpired; },
-	/** Löst direkt einen neuen Box-Login aus (bei abgelaufener Sitzung). */
+	/** Triggers a new Box login (when session has expired). */
 	reLogin() { boxLogin(); },
 	get lastSync() { return _lastSync; },
 
@@ -133,7 +133,7 @@ export const tasks = {
 		/** @type {Record<string, number>} */
 		const counts = {};
 		for (const t of _tasks.filter(t => t.status === 'open')) {
-			const key = t.area || '(kein Bereich)';
+			const key = t.area || '(no area)';
 			counts[key] = (counts[key] ?? 0) + 1;
 		}
 		return counts;
@@ -149,8 +149,8 @@ export const tasks = {
 	},
 
 	/**
-	 * Tasks die für die Topic-Filterzeile relevant sind:
-	 * open + aktive Areas + aktiver Suchbegriff (ohne Topic-Filter selbst).
+	 * Tasks relevant for the topic filter row:
+	 * open + active areas + active search query (without topic filter itself).
 	 */
 	get _topicBase() {
 		let result = _tasks.filter(t => t.status === 'open');
@@ -168,19 +168,19 @@ export const tasks = {
 		return result;
 	},
 
-	/** Topics die nach Area- und Suche-Filter noch existieren (alphabetisch sortiert) */
+	/** Topics still available after area and search filter (sorted alphabetically) */
 	get visibleTopics() {
 		const set = new Set(this._topicBase.filter(t => t.topic).map(t => t.topic));
 		return [...set].sort();
 	},
 
-	/** Alle einzigartigen Tags über alle Tasks (alphabetisch sortiert) */
+	/** All unique tags across all tasks (sorted alphabetically) */
 	get allTags() {
 		const set = new Set(_tasks.flatMap(t => t.tags ?? []));
 		return [...set].sort();
 	},
 
-	/** Zählung der Topics, beschränkt auf gefilterte Basis-Tasks */
+	/** Topic counts restricted to the filtered base tasks */
 	get countByTopicFiltered() {
 		/** @type {Record<string, number>} */
 		const counts = {};
@@ -191,11 +191,11 @@ export const tasks = {
 	}
 };
 
-// ── Aktionen ───────────────────────────────────────────────────────────────
+// ── Actions ────────────────────────────────────────────────────────────────
 
 /**
- * Interne Hilfsfunktion: speichert die aktuellen UI-Einstellungen debounced nach Box.
- * Wird nur aufgerufen wenn ein Token vorhanden ist (= eingeloggt).
+ * Internal helper: saves current UI settings debounced to Box.
+ * Only called when a token is present (= logged in).
  */
 function _savePrefs() {
 	if (!getToken()) return;
@@ -222,7 +222,7 @@ export async function loadTasks() {
 }
 
 export async function initialSync() {
-	// Ohne Token keinen Sync versuchen – Nutzer muss sich erst einloggen
+	// Skip sync if no token present – user must log in first
 	if (!getToken()) return;
 
 	_syncing = true;
@@ -230,9 +230,9 @@ export async function initialSync() {
 	_sessionExpired = false;
 	try {
 		await retryFailedSyncs();
-		// Prefs und Tasks parallel laden
+		// Load prefs and tasks in parallel
 		const [prefs] = await Promise.all([loadPrefs(), syncFromStorage()]);
-		// Gespeicherte UI-Einstellungen anwenden (nur wenn Wert sinnvoll ist)
+		// Apply saved UI settings (only if value is valid)
 		if (prefs) {
 			if (typeof prefs.minScore === 'number')       _minScore     = prefs.minScore;
 			if (Array.isArray(prefs.activeAreas))         _activeAreas  = prefs.activeAreas;
@@ -241,16 +241,16 @@ export async function initialSync() {
 		}
 		await loadTasks();
 		_lastSync = new Date().toISOString();
-		// Polling starten: alle 30s auf Remote-Änderungen prüfen
+		// Start polling: check for remote changes every 30s
 		startPolling(async () => {
 			await loadTasks();
 			_lastSync = new Date().toISOString();
 		});
 	} catch (err) {
 		const msg = String(err);
-		// SESSION_EXPIRED wird von boxFetch geworfen wenn 401 + kein Refresh möglich.
-		// "Load failed" / "Failed to fetch" / "NetworkError" tritt auf iOS auf wenn
-		// der Token abgelaufen ist und der Browser den Request blockiert.
+		// SESSION_EXPIRED is thrown by boxFetch on 401 + no refresh possible.
+		// "Load failed" / "Failed to fetch" / "NetworkError" occurs on iOS when
+		// the token has expired and the browser blocks the request.
 		const isAuthError =
 			msg.includes('SESSION_EXPIRED') ||
 			msg.includes('Load failed') ||
@@ -269,13 +269,13 @@ export async function initialSync() {
 }
 
 /**
- * Polling und Sync-Zustand zurücksetzen (beim Logout aufrufen).
+ * Reset polling and sync state (call on logout).
  */
 export function stopSync() {
 	stopPolling();
 	_lastSync = null;
 	_sessionExpired = false;
-	// UI-Einstellungen beim Logout zurücksetzen
+	// Reset UI settings on logout
 	_minScore     = 0;
 	_activeAreas  = [];
 	_activeTopics = [];

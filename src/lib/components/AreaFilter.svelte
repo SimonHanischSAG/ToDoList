@@ -1,28 +1,28 @@
 <!--
-  AreaFilter – Area-Zeile, Topic-Zeile und Score-Slider-Filter.
+  AreaFilter – area row, topic row and score slider filter.
 
-  Der Score-Slider filtert nach berechnetem Score (0-100), nicht nach Prio-Kategorie.
-  Damit wird Aging automatisch berücksichtigt: ein 6 Monate alter Medium-High-Task
-  (Score ~40) wird beim Slider-Wert 45 bereits herausgefiltert, obwohl seine
-  nominelle Prio höher ist.
+  The score slider filters by calculated score (0–100), not by priority category.
+  This automatically accounts for aging: a 6-month-old Medium-High task
+  (score ~40) is already filtered out at slider value 45, even though its
+  nominal priority is higher.
 -->
 <script>
 	import { tasks } from '$lib/stores/taskStore.svelte.js';
 
-	/** Scrollt eine Filter-Zeile um eine Seite nach links/rechts */
+	/** Scrolls a filter row one page left/right */
 	function scrollRow(el, dir) {
 		if (!el) return;
 		el.scrollBy({ left: dir * 160, behavior: 'smooth' });
 	}
 
-	/** Ref-Variablen für die beiden scrollbaren Zeilen */
+	/** Ref variables for the two scrollable rows */
 	let areaRow = $state(null);
 	let topicRow = $state(null);
 
 	/**
-	 * Prio-Markierungen auf der Slider-Skala.
-	 * basePrio-Werte aus priority.js – zeigen den "frischen" Score einer Kategorie.
-	 * Aging kann den tatsächlichen Score nach unten verschieben.
+	 * Priority markers on the slider scale.
+	 * basePrio values from priority.js – show the "fresh" score of a category.
+	 * Aging can shift the actual score downward.
 	 */
 	const SCORE_MARKS = [
 		{ score: 90, label: 'Critical', short: 'Crit',  color: 'text-red-600' },
@@ -35,16 +35,16 @@
 	];
 
 	/**
-	 * Welche Prio-Kategorie entspricht dem aktuellen minScore?
-	 * Wir suchen die Markierung mit dem höchsten Score der noch <= minScore ist
-	 * (= die Kategorie auf deren Niveau der Slider gerade steht).
-	 * Beispiel: minScore=50 → liegt zwischen Normal(45) und Med-High(60) → zeigt "Med-High"
-	 * weil 60 die nächste Kategorie ist, die man gerade hereinlässt.
+	 * Which priority category corresponds to the current minScore?
+	 * We look for the marker with the highest score still <= minScore
+	 * (= the category level the slider is currently at).
+	 * Example: minScore=50 → between Normal(45) and Med-High(60) → shows "Med-High"
+	 * because 60 is the next category being let through.
 	 */
 	function activeLabel(minScore) {
 		if (minScore === 0) return null;
-		// Kleinste Markierung deren Score >= minScore (= niedrigste sichtbare Kategorie)
-		// SCORE_MARKS ist absteigend sortiert → von hinten suchen
+		// Smallest marker whose score >= minScore (= lowest visible category)
+		// SCORE_MARKS is sorted descending → search from the end
 		const mark = [...SCORE_MARKS].reverse().find(m => m.score >= minScore);
 		return mark ?? SCORE_MARKS[0]; // Fallback: Critical
 	}
@@ -58,9 +58,9 @@
 		return '';
 	}
 
-	// Slider-Wert direkt an tasks.minScore binden
+	// Bind slider value directly to tasks.minScore
 	let sliderValue = $derived(tasks.minScore);
-	// Prozentwert für den Track-Gradient (0–100)
+	// Percentage for the track gradient (0–100)
 	let trackPct = $derived(Math.round((sliderValue / 90) * 100));
 
 	function onSliderInput(e) {
@@ -141,14 +141,14 @@
 
 <!-- Score-Slider-Filter -->
 <div class="mt-2 px-0.5">
-	<!-- Feste 3-Spalten-Zeile: links Label | Mitte Score | rechts Reset -->
-	<!-- Alle Slots immer gerendert → kein Layout-Sprung beim Ein-/Ausblenden -->
+	<!-- Fixed 3-column row: left label | centre score | right reset -->
+	<!-- All slots always rendered → no layout shift on show/hide -->
 	<div class="flex items-center mb-1">
 		<span class="text-xs text-ibm-text-muted shrink-0">Min. Score:</span>
 
 		<span class="flex-1 text-center text-xs">
 			{#if tasks.minScore === 0}
-				<span class="text-ibm-text-muted">alle Tasks sichtbar</span>
+				<span class="text-ibm-text-muted">all tasks visible</span>
 			{:else}
 				{@const mark = activeLabel(tasks.minScore)}
 				<span class="font-semibold {mark?.color ?? ''}">
@@ -164,7 +164,7 @@
 			onclick={() => tasks.minScore = 0}
 			class="text-xs text-ibm-text-muted hover:text-ibm-blue transition-colors shrink-0 ml-2
 			       {tasks.minScore === 0 ? 'invisible' : ''}"
-			title="Filter zurücksetzen"
+			title="Reset filter"
 		>✕ reset</button>
 	</div>
 
@@ -199,7 +199,7 @@
 		</div>
 	</div>
 
-	<!-- Aging-Hinweis: immer gerendert, unsichtbar wenn leer → kein Layout-Sprung -->
+	<!-- Aging hint: always rendered, invisible when empty → no layout shift -->
 	<p class="text-[10px] text-orange-500 mt-0.5 leading-tight h-3
 	          {agingHint(tasks.minScore) ? '' : 'invisible'}">
 		⏱{agingHint(tasks.minScore)}
@@ -207,7 +207,7 @@
 </div>
 
 <style>
-	/* ── Filter-Zeile (Area / Topic) ── */
+	/* ── Filter row (Area / Topic) ── */
 	.filter-row-wrapper {
 		display: flex;
 		align-items: center;
@@ -221,7 +221,7 @@
 		gap: 8px;
 		overflow-x: auto;
 		padding-bottom: 4px;
-		/* Scrollbar auf Desktop sichtbar machen (dünn, dezent) */
+		/* Make scrollbar visible on desktop (thin, subtle) */
 		scrollbar-width: thin;
 		scrollbar-color: #cbd5e1 transparent;
 		scroll-snap-type: x proximity;
@@ -240,7 +240,7 @@
 		background: transparent;
 	}
 
-	/* Pfeil-Buttons nur sichtbar wenn nötig (hover auf wrapper) */
+	/* Arrow buttons only visible when needed (hover on wrapper) */
 	.scroll-btn {
 		flex-shrink: 0;
 		width: 20px;
