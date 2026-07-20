@@ -142,25 +142,31 @@
 
 <!-- Score-Slider-Filter -->
 <div class="mt-2 px-0.5">
-	<div class="flex items-center justify-between mb-1">
-		<span class="text-xs text-ibm-text-muted">Min. Score:</span>
+	<!-- Feste 3-Spalten-Zeile: links Label | Mitte Score | rechts Reset -->
+	<!-- Alle Slots immer gerendert → kein Layout-Sprung beim Ein-/Ausblenden -->
+	<div class="flex items-center mb-1">
+		<span class="text-xs text-ibm-text-muted shrink-0">Min. Score:</span>
 
-		{#if tasks.minScore === 0}
-			<span class="text-xs text-ibm-text-muted">alle Tasks sichtbar</span>
-		{:else}
-			{@const mark = activeLabel(tasks.minScore)}
-			<span class="text-xs font-semibold {mark?.color ?? ''}">
-				≥ {tasks.minScore}
-				{#if mark}
-					<span class="font-normal text-ibm-text-muted">(~{mark.label})</span>
-				{/if}
-			</span>
-			<button
-				onclick={() => tasks.minScore = 0}
-				class="text-xs text-ibm-text-muted hover:text-ibm-blue transition-colors ml-2"
-				title="Filter zurücksetzen"
-			>✕ reset</button>
-		{/if}
+		<span class="flex-1 text-center text-xs">
+			{#if tasks.minScore === 0}
+				<span class="text-ibm-text-muted">alle Tasks sichtbar</span>
+			{:else}
+				{@const mark = activeLabel(tasks.minScore)}
+				<span class="font-semibold {mark?.color ?? ''}">
+					≥ {tasks.minScore}
+					{#if mark}
+						<span class="font-normal text-ibm-text-muted">(~{mark.label})</span>
+					{/if}
+				</span>
+			{/if}
+		</span>
+
+		<button
+			onclick={() => tasks.minScore = 0}
+			class="text-xs text-ibm-text-muted hover:text-ibm-blue transition-colors shrink-0 ml-2
+			       {tasks.minScore === 0 ? 'invisible' : ''}"
+			title="Filter zurücksetzen"
+		>✕ reset</button>
 	</div>
 
 	<!-- Slider -->
