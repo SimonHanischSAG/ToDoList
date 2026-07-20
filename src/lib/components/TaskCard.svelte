@@ -65,8 +65,9 @@
 		return `Due in ${days} days`;
 	}
 
-	let _expanded = $state(false);
-	let editing   = $state(false);
+	let _expanded     = $state(false);
+	let editing       = $state(false);
+	let confirmDelete = $state(false);
 
 	// Im Verbose-Mode immer aufgeklappt; sonst manuell steuerbar
 	const expanded = $derived(verbose || _expanded);
@@ -193,17 +194,56 @@
 						>{_expanded ? '▲' : '▼'}</button>
 					{/if}
 					<button
-						onclick={(e) => { e.stopPropagation(); if (confirm(`Task "${task.title || 'no title'}" wirklich löschen?`)) ondelete(); }}
-						class="text-ibm-gray-dark hover:text-red-500 transition-colors p-1"
-						title="Delete task"
-						aria-label="Delete"
-					>✕</button>
+							onclick={(e) => { e.stopPropagation(); confirmDelete = true; }}
+							class="text-ibm-gray-dark hover:text-red-500 transition-colors p-1"
+							title="Delete task"
+							aria-label="Delete"
+						>✕</button>
 				</div>
 		</div>
 	</div>
 </div>
 
-<!-- Edit-Modal außerhalb der klickbaren Card, damit der Save-Klick nicht durchbubbelt -->
+<!-- Edit-Modal -->
 {#if editing}
 	<TaskForm task={task} onclose={() => editing = false} />
+{/if}
+
+<!-- Delete-Confirmation-Modal -->
+{#if confirmDelete}
+	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+		onclick={() => confirmDelete = false}
+	>
+		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+		<div
+			class="bg-white rounded-lg shadow-xl w-80 p-5 space-y-4"
+			onclick={(e) => e.stopPropagation()}
+		>
+			<div class="flex items-start gap-3">
+				<span class="text-red-500 text-xl leading-none mt-0.5">⚠</span>
+				<div>
+					<p class="text-sm font-semibold text-ibm-text">Delete task?</p>
+					<p class="text-xs text-ibm-text-muted mt-1 break-words">
+						"{task.title || 'no title'}" will be permanently deleted.
+					</p>
+				</div>
+			</div>
+			<div class="flex justify-end gap-2">
+				<button
+					onclick={() => confirmDelete = false}
+					class="text-sm px-3 py-1.5 rounded border border-ibm-gray-dark text-ibm-text hover:bg-ibm-gray transition-colors"
+				>
+					Cancel
+				</button>
+				<button
+					onclick={() => { confirmDelete = false; ondelete(); }}
+					class="text-sm px-3 py-1.5 rounded bg-red-600 text-white hover:bg-red-700 transition-colors font-semibold"
+				>
+					Delete
+				</button>
+			</div>
+		</div>
+	</div>
 {/if}
