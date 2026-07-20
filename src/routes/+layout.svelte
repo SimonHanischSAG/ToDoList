@@ -106,8 +106,9 @@
 	</div>
 
 {:else}
-	<div class="min-h-screen bg-ibm-gray flex flex-col" style="overflow-y: auto; scrollbar-gutter: stable;">
-		<header class="bg-ibm-text shadow-sm px-4 py-3 flex items-center justify-between">
+	<!-- Äußerer Wrapper: exakt Viewport-Höhe, kein eigenes Scrollen -->
+	<div class="bg-ibm-gray flex flex-col" style="height: 100dvh; overflow: hidden;">
+		<header class="bg-ibm-text shadow-sm px-4 py-3 flex items-center justify-between flex-shrink-0">
 			<span class="text-white font-bold text-lg">IBM Todo</span>
 			<div class="flex items-center gap-3">
 				{#if loggedIn}
@@ -152,12 +153,13 @@
 		</header>
 
 		{#if importMsg}
-			<div class="bg-green-50 border-b border-green-200 text-green-800 text-xs px-4 py-2 text-center">
+			<div class="bg-green-50 border-b border-green-200 text-green-800 text-xs px-4 py-2 text-center flex-shrink-0">
 				{importMsg}
 			</div>
 		{/if}
 
-		<main class="flex-1">
+		<!-- Scrollbarer Content-Bereich: scrollbar-gutter reserviert Platz permanent -->
+		<main class="flex-1 min-h-0" style="overflow-y: auto; scrollbar-gutter: stable;">
 			{@render children()}
 		</main>
 	</div>
