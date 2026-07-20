@@ -139,6 +139,12 @@
 								⏰ {deadline}
 							</span>
 						{/if}
+						<!-- Tags in Kompakt-Ansicht (nur wenn nicht bereits expanded) -->
+						{#if !expanded && task.tags.length > 0}
+							{#each task.tags as tag}
+								<span class="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">#{tag}</span>
+							{/each}
+						{/if}
 						<span class="text-xs text-ibm-text-muted ml-auto">Score: {task.score}</span>
 					</div>
 
@@ -187,7 +193,7 @@
 						>{_expanded ? '▲' : '▼'}</button>
 					{/if}
 					<button
-						onclick={(e) => { e.stopPropagation(); ondelete(); }}
+						onclick={(e) => { e.stopPropagation(); if (confirm(`Task "${task.title || 'no title'}" wirklich löschen?`)) ondelete(); }}
 						class="text-ibm-gray-dark hover:text-red-500 transition-colors p-1"
 						title="Delete task"
 						aria-label="Delete"
