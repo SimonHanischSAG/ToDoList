@@ -65,11 +65,14 @@ export function calcScore(task, allTasks) {
 
 	let score = PRIO_BASE[task.priority] ?? 45;
 
-	// 1. Deadline-Boost
+	// 1. Deadline-Boost (granular nach exakten Tagen, damit "heute" > "in 1 Tag" > "in 2 Tagen" usw.)
 	if (task.dueDate) {
 		const daysLeft = daysDiff(new Date(), new Date(task.dueDate));
-		if (daysLeft < 0)   score += 25; // überfällig
-		else if (daysLeft <= 3)  score += 20;
+		if (daysLeft < 0)        score += 25; // überfällig
+		else if (daysLeft === 0) score += 22; // heute
+		else if (daysLeft === 1) score += 20; // morgen
+		else if (daysLeft === 2) score += 18; // übermorgen
+		else if (daysLeft === 3) score += 16;
 		else if (daysLeft <= 7)  score += 10;
 		else if (daysLeft <= 14) score += 5;
 	}
@@ -117,7 +120,7 @@ export function rankTasks(tasks) {
 	const open = tasks.filter((t) => t.status === 'open');
 	return tasks
 		.map((task) => ({ ...task, score: calcScore(task, open) }))
-		.sort((a, b) => b.score - a.score || new Date(b.createdAt) - new Date(a.createdAt));
+		.sort((a, b) => b.score - a.score || dueDateSort(a, b) || new Date(b.createdAt) - new Date(a.createdAt));
 }
 
 /**
@@ -132,7 +135,7 @@ export function getFocusTasks(tasks, { area = '', maxItems = 5 } = {}) {
 		.filter((t) => !area || t.area === area)
 		.filter((t) => !isBlocked(t, open))
 		.map((t) => ({ ...t, score: calcScore(t, open) }))
-		.sort((a, b) => b.score - a.score || new Date(b.createdAt) - new Date(a.createdAt))
+		.sort((a, b) => b.score - a.score || dueDateSort(a, b) || new Date(b.createdAt) - new Date(a.createdAt))
 		.slice(0, maxItems);
 }
 
@@ -160,6 +163,18 @@ function isBlocked(task, allTasks) {
 		const blocker = allTasks.find((t) => t.id === id);
 		return blocker && blocker.status === 'open';
 	});
+}
+
+/**
+ * Sekundäre Sortierung nach Due-Date: früher fällig = weiter oben.
+ * Tasks ohne Due-Date kommen nach Tasks mit Due-Date.
+ * @param {Task} a @param {Task} b @returns {number}
+ */
+function dueDateSort(a, b) {
+	if (a.dueDate && b.dueDate) return new Date(a.dueDate) - new Date(b.dueDate);
+	if (a.dueDate) return -1;
+	if (b.dueDate) return 1;
+	return 0;
 }
 
 /** @param {Date} from @param {Date} to @returns {number} */
