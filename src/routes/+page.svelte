@@ -41,6 +41,18 @@
 		</div>
 	{/if}
 
+	{#if tasks.pushError}
+		<div class="bg-red-50 border border-red-300 text-red-900 text-sm px-4 py-3 rounded mb-3 flex items-start justify-between gap-3">
+			<span>⚠ <strong>Save failed:</strong> {tasks.pushError}</span>
+			<button
+				onclick={() => tasks.dismissPushError()}
+				class="shrink-0 text-red-400 hover:text-red-700 font-bold text-base leading-none"
+				aria-label="Dismiss"
+				title="Dismiss"
+			>✕</button>
+		</div>
+	{/if}
+
 	{#if tasks.sessionExpired}
 		<div class="bg-amber-50 border border-amber-300 text-amber-900 text-sm px-4 py-3 rounded mb-3 flex items-center justify-between gap-3">
 			<span>⚠ Your session has expired. Please sign in again.</span>

@@ -19,6 +19,9 @@ let _showDone = $state(false);
 let _loading = $state(false);
 let _syncing = $state(false);
 let _error = $state(/** @type {string | null} */ (null));
+/** Push error – set when a local change could not be saved to Box.
+ *  Survives poll cycles and loadTasks calls; only cleared by explicit user dismiss. */
+let _pushError = $state(/** @type {string | null} */ (null));
 let _sessionExpired = $state(false);
 /** Timestamp of last successful remote sync (for UI indicator) */
 let _lastSync = $state(/** @type {string | null} */ (null));
@@ -89,6 +92,8 @@ export const tasks = {
 	get loading() { return _loading; },
 	get syncing() { return _syncing; },
 	get error() { return _error; },
+	get pushError() { return _pushError; },
+	dismissPushError() { _pushError = null; },
 	get sessionExpired() { return _sessionExpired; },
 	/** Triggers a new Box login (when session has expired). */
 	reLogin() { boxLogin(); },
@@ -284,15 +289,16 @@ export function stopSync() {
 
 /**
  * Central error callback passed to schedulePush.
- * Sets _error so the UI banner shows the conflict message.
+ * Sets _pushError (not _error) so the banner persists across poll cycles
+ * and is only dismissed by the user explicitly.
  * @param {Error} err
  */
 function _onPushError(err) {
 	const msg = String(err.message ?? err);
 	if (msg.startsWith('CONFLICT')) {
-		_error = '⚠ Sync conflict: another device saved changes at the same time. Your local changes are kept. The remote version will be reloaded automatically.';
+		_pushError = 'Sync conflict: another device saved changes at the same time. Your local changes are kept. The remote version will be reloaded on the next sync.';
 	} else {
-		_error = `Sync error: ${msg}`;
+		_pushError = `Your changes could not be saved: ${msg}`;
 	}
 }
 
