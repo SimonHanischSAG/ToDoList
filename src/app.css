@@ -15,9 +15,12 @@
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
 /* PWA: Safe-Area für iPhone Notch */
+/* scrollbar-gutter: stable reserviert den Scrollbalken-Platz dauerhaft,
+   damit die UI nicht springt wenn der Balken ein- oder ausblendet */
 body {
 	padding-top: env(safe-area-inset-top);
 	padding-bottom: env(safe-area-inset-bottom);
+	scrollbar-gutter: stable;
 }
 
 /* Rich-Text-Inhalt (TaskCard + Editor) */
