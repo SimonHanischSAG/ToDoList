@@ -1,162 +1,187 @@
 # IBM Todo App
 
-Intelligente, serverlose Todo-Verwaltung für IBM-Mitarbeiter als Progressive Web App (PWA).
+Smart, serverless todo management for IBM employees as a Progressive Web App (PWA).
 
 **Live:** https://simonhanischsag.github.io/ToDoList/
 
 ## Features
 
-- 🔐 **IBM-Login** via Box OAuth 2.0 (PKCE-Flow, kein zentrales Backend)
-- ☁️ **Datenhaltung in deiner Box** – jeder Nutzer speichert in seinem eigenen Box-Account
-- 📱 **iPhone-ready** – als PWA zum Home Screen hinzufügbar (Standalone-App-Erlebnis)
-- 🔄 **Multi-Device-Sync** – automatisches Polling alle 30 s, konfliktfreies Mergen (Optimistic Locking)
-- 🧠 **Intelligente Prioritäts-Engine** – automatischer Score aus Deadline, Abhängigkeiten, Alter
-- ⭐ **Focus-Modus** – zeigt täglich die 5 wichtigsten Tasks
-- 🔍 **Volltextsuche** + Filter nach Umfeld (Area) und Thema (Topic)
-- 📴 **Offline-fähig** – Service Worker cached die App
+- 🔐 **IBM login** via Box OAuth 2.0 (PKCE flow, no central backend)
+- ☁️ **Data stored in your Box** – each user stores data in their own Box account
+- 📱 **Mobile-ready** – installable as a PWA on iOS and Android
+- 🔄 **Multi-device sync** – automatic polling every 30 s, optimistic locking
+- 🧠 **Smart priority engine** – automatic score from deadline, dependencies, age
+- ⭐ **Focus mode** – shows the 5 most important tasks each day
+- 🔍 **Full-text search** + filter by area and topic
+- 📴 **Offline-capable** – Service Worker caches the app shell
 
 ---
 
-## iPhone – Als App installieren (PWA)
+## iPhone / Mobile – Install as App (PWA)
 
-Die App kann auf dem iPhone wie eine native App auf dem Homescreen erscheinen:
+The app can be installed on the home screen like a native app.
 
-### Schritt-für-Schritt
+### iOS (iPhone / iPad)
 
-1. **Safari öffnen** (wichtig: nur Safari unterstützt PWA-Installation auf iOS)
-2. URL aufrufen: `https://simonhanischsag.github.io/ToDoList/`
-3. **Teilen-Symbol** antippen (das Viereck mit dem Pfeil nach oben, unten in der Menüleiste)
-4. Im Teilen-Menü nach unten scrollen → **„Zum Home-Bildschirm"** antippen
-5. Den vorgeschlagenen Namen bestätigen (z. B. „IBM Todo") → **Hinzufügen**
+On iOS, only **Safari** supports PWA installation. However, the overall experience on iPhone
+is more limited than on a desktop browser:
 
-Das App-Icon erscheint jetzt auf dem Homescreen. Beim Öffnen startet die App vollbild ohne
-Safari-Adressleiste – genau wie eine native App.
+- **Microsoft Edge** (desktop) offers the most comfortable experience: credentials are remembered
+  between sessions, the app installs cleanly, and the session stays alive for a long time.
+- On iPhone, **sessions expire more quickly** due to iOS memory management. After closing the app
+  for a while you may need to sign in again. The app attempts a silent token refresh on startup,
+  but this does not always succeed on iOS.
+- Overall, the iPhone version is a useful feature for checking tasks on the go, but it is not
+  as seamless as the desktop experience.
 
-### Was das Icon ist
+#### Step-by-step (Safari on iOS)
 
-Das App-Icon (`apple-touch-icon.png`, 180 × 180 px) wird automatisch beim Hinzufügen
-zum Homescreen verwendet. Es liegt unter `static/apple-touch-icon.png` und wird in
-`src/app.html` via `<link rel="apple-touch-icon">` referenziert.
+1. Open **Safari** (required – other iOS browsers cannot install PWAs)
+2. Navigate to: `https://simonhanischsag.github.io/ToDoList/`
+3. Tap the **Share** icon (rectangle with arrow pointing up, bottom toolbar)
+4. Scroll down in the share sheet → tap **"Add to Home Screen"**
+5. Confirm the suggested name → tap **Add**
 
-> **Tipp:** Das Icon kann jederzeit durch eine neue PNG-Datei (180 × 180 px, kein Transparenz-Kanal)
-> unter `static/apple-touch-icon.png` ersetzt werden. Nach dem nächsten Deploy ist es aktiv.
+The app icon appears on your home screen. When opened it runs full-screen without the
+Safari address bar.
 
-### iOS-spezifische Meta-Tags (bereits gesetzt in `src/app.html`)
+### Android / Desktop (Chrome, Edge, …)
 
-| Meta-Tag | Bedeutung |
+On Android and desktop browsers, install via the address bar install button or
+**Menu → Install app**.
+
+### What the icon is
+
+The app icon (`apple-touch-icon.png`, 180 × 180 px) is used automatically when adding
+to the home screen. It is located under `static/apple-touch-icon.png` and referenced in
+`src/app.html` via `<link rel="apple-touch-icon">`.
+
+> **Tip:** Replace `static/apple-touch-icon.png` with any PNG (180 × 180 px, no transparency)
+> to update the icon. It goes live with the next deploy.
+
+### iOS-specific meta tags (set in `src/app.html`)
+
+| Meta tag | Meaning |
 |---|---|
-| `apple-mobile-web-app-capable` | Standalone-Modus (kein Safari-Chrome) |
-| `apple-mobile-web-app-status-bar-style` | Statusleiste schwarz-transluzent |
-| `apple-mobile-web-app-title` | Name unter dem Icon: „IBM Todo" |
-| `viewport-fit=cover` | Inhalt reicht bis in die Safe Areas (Notch) |
+| `apple-mobile-web-app-capable` | Standalone mode (no Safari chrome) |
+| `apple-mobile-web-app-status-bar-style` | Black-translucent status bar |
+| `apple-mobile-web-app-title` | Name shown under the icon: "IBM ToDo List" |
+| `viewport-fit=cover` | Content extends into safe areas (notch) |
 
-### Push Notifications auf iOS
+### Push Notifications on iOS
 
-Ab iOS 16.4 unterstützt Safari Web Push. Voraussetzung: App muss als PWA installiert sein.
-Implementierung ist vorbereitet (`vite-plugin-pwa` + Workbox), aber noch nicht aktiviert.
+Safari Web Push is supported from iOS 16.4 onwards. Prerequisite: the app must be installed as
+a PWA. The implementation is prepared (`vite-plugin-pwa` + Workbox) but not yet activated.
 
 ---
 
-## Multi-Device-Synchronisation
+## Multi-Device Synchronisation
 
-Die App ist auf konfliktfreien Parallelbetrieb auf mehreren Geräten ausgelegt:
+The app is designed for conflict-safe parallel use on multiple devices.
 
-### Wie es funktioniert
+### How it works
 
 ```
-Gerät A (bearbeitet Task)            Gerät B (öffnet App)
+Device A (editing a task)            Device B (opens app)
       │                                      │
-      │ 1. Änderung lokal (IndexedDB)         │
-      │ 2. Upload → Box mit If-Match          │  3. Polling alle 30s (ETag-Check)
-      │    ETag-Header                        │  4. ETag geändert → Download
-      │                                       │  5. loadTasks() → UI aktualisiert
+      │ 1. Local change (IndexedDB)          │
+      │ 2. Upload → Box with If-Match        │  3. Polling every 30 s (ETag check)
+      │    ETag header                       │  4. ETag changed → download
+      │                                      │  5. loadTasks() → UI updated
 ```
 
-### Optimistic Locking (Schreibkonflikte)
+### Optimistic Locking (write conflicts)
 
-Jeder Upload sendet `If-Match: <letzter-ETag>` an Box. Wenn zwei Geräte gleichzeitig
-schreiben wollen, schlägt das zweite mit HTTP **412 Precondition Failed** fehl.
-Die App reagiert automatisch:
+Every upload sends `If-Match: <last-ETag>` to Box. If two devices try to write at the same
+time, the second one receives HTTP **412 Precondition Failed**.
 
-1. Remote-Stand herunterladen
-2. **Merge:** Für jeden Task gewinnt der Stand mit dem neueren `updatedAt`-Zeitstempel
-3. Merge lokal speichern
-4. Nochmals hochladen (max. 3 Versuche)
+The app handles this automatically:
 
-### Automatisches Polling
+1. The conflicting upload is **aborted**
+2. Local changes are kept in IndexedDB
+3. On the next poll cycle (within 30 s) the remote version is downloaded
+4. The UI reflects the remote state; any unsaved local changes may be lost
 
-Alle **30 Sekunden** prüft jedes Gerät per Metadaten-Request (kein Body-Download),
-ob sich der ETag der `todos.json` geändert hat. Nur wenn ja, werden die Daten
-heruntergeladen und die UI aktualisiert.
+> Note: The app does **not** perform an automatic merge. In a conflict the remote version wins
+> on the next sync. To avoid losing changes, avoid editing the same tasks on two devices
+> simultaneously.
 
-Der aktuelle Sync-Status ist im Header sichtbar:
-- **⟳ Sync…** – gerade aktiv
-- **✓ HH:MM** – letzter erfolgreicher Remote-Sync
+### Automatic Polling
+
+Every **30 seconds** each device checks via a metadata request (no body download) whether
+the ETag of `todos.json` has changed. Only if it has will the data be downloaded and the
+UI updated.
+
+The current sync status is visible in the header:
+- **⟳ Sync…** – sync in progress
+- **✓ HH:MM** – last successful remote sync
 
 ---
 
-## Architektur
+## Architecture
 
 ```
-GitHub Pages (statische PWA)
+GitHub Pages (static PWA)
     │
-    ├─ Box OAuth 2.0 PKCE-Flow
+    ├─ Box OAuth 2.0 PKCE flow
     │
-    └─ Box des Nutzers
+    └─ User's Box account
            └─ /IBMTodoStorage/todos.json
+           └─ /IBMTodoStorage/prefs.json
 ```
 
-Kein Server. Kein Backend. Keine Datenbank. €0 laufende Kosten.
+No server. No backend. No database. €0 running costs.
 
 ---
 
-## Setup (für Entwickler)
+## Setup (for developers)
 
-### 1. Box App Registration anlegen
+### 1. Create Box App Registration
 
 1. [Box Developer Console](https://app.box.com/developers/console) → **Create New App**
-2. App-Typ: **Custom App** → **User Authentication (OAuth 2.0)**
+2. App type: **Custom App** → **User Authentication (OAuth 2.0)**
 3. Redirect URI: `https://simonhanischsag.github.io/ToDoList/`
-4. **Client ID** und **Client Secret** kopieren
+4. Copy **Client ID** and **Client Secret**
 
-### 2. GitHub Secrets hinterlegen
+### 2. Add GitHub Secrets
 
 GitHub Repository → **Settings** → **Secrets and variables** → **Actions**:
-- `VITE_BOX_CLIENT_ID` – Client ID aus Schritt 1
-- `VITE_BOX_CLIENT_SECRET` – Client Secret aus Schritt 1
+- `VITE_BOX_CLIENT_ID` – Client ID from step 1
+- `VITE_BOX_CLIENT_SECRET` – Client Secret from step 1
 
-### 3. GitHub Pages aktivieren
+### 3. Enable GitHub Pages
 
 Repository → **Settings** → **Pages** → Source: **GitHub Actions**
 
-### 4. Lokale Entwicklung
+### 4. Local Development
 
 ```bash
 npm install
 
-# .env.local anlegen:
+# Create .env.local:
 cp .env.example .env.local
-# VITE_BOX_CLIENT_ID und VITE_BOX_CLIENT_SECRET eintragen
+# Fill in VITE_BOX_CLIENT_ID and VITE_BOX_CLIENT_SECRET
 
 npm run dev
 ```
 
-Die App läuft auf http://localhost:5173
+The app runs at http://localhost:5173
 
 ---
 
-## Datenformat
+## Data Format
 
-Alle Tasks werden als `todos.json` im Box-Account des Nutzers gespeichert
-(`/IBMTodoStorage/todos.json`):
+All tasks are stored as `todos.json` in the user's Box account
+(`/IBMTodoStorage/todos.json`). UI preferences (active filters, score threshold, etc.)
+are stored separately in `/IBMTodoStorage/prefs.json`.
 
 ```json
 [
   {
     "id": "uuid-v4",
-    "title": "Kurzer Titel",
-    "description": "<p>Details als HTML…</p>",
-    "comments": "<p>Interne Notizen…</p>",
+    "title": "Short title",
+    "description": "<p>Details as HTML…</p>",
+    "comments": "<p>Internal notes…</p>",
     "status": "open",
     "priority": "high",
     "area": "MFT",
@@ -173,66 +198,70 @@ Alle Tasks werden als `todos.json` im Box-Account des Nutzers gespeichert
 
 ---
 
-## Score-Formel
+## Score Formula
 
 ```
 score = basePrio
-      + deadlineBoost    (je näher/überfälliger, desto mehr)
-      + dependencyBoost  (wenn andere Tasks auf diesen warten)
-      +/- agingEffect    (abhängig von Prio-Stufe, basiert auf updatedAt)
-      - blockedPenalty   (wenn selbst blockiert)
+      + deadlineBoost    (the closer / more overdue, the higher)
+      + dependencyBoost  (if other tasks are waiting on this one)
+      +/- agingEffect    (depends on priority level, based on updatedAt)
+      - blockedPenalty   (if this task is itself blocked)
 ```
 
-### Basis-Scores (7 Stufen)
+### Base Scores (7 levels)
 
-| Prio        | Basis-Score |
-|-------------|-------------|
-| critical    | 90          |
-| high        | 75          |
-| medium-high | 60          |
-| normal      | 45          |
-| low         | 30          |
-| verylow     | 15          |
-| someday     |  5          |
+| Priority    | Base score |
+|-------------|------------|
+| critical    | 90         |
+| high        | 75         |
+| medium-high | 60         |
+| normal      | 45         |
+| low         | 30         |
+| verylow     | 15         |
+| someday     |  5         |
 
-### Deadline-Boost (alle Prio-Stufen gleich)
+### Deadline Boost (all priority levels equal)
 
-| Fälligkeit  | Boost |
-|-------------|-------|
-| Überfällig  | +25   |
-| ≤ 3 Tage    | +20   |
-| ≤ 7 Tage    | +10   |
-| ≤ 14 Tage   | +5    |
-| > 14 Tage   |  0    |
+| Due          | Boost |
+|--------------|-------|
+| Overdue      | +25   |
+| Today        | +22   |
+| Tomorrow     | +20   |
+| In 2 days    | +18   |
+| In 3 days    | +16   |
+| ≤ 7 days     | +10   |
+| ≤ 14 days    | +5    |
+| > 14 days    |  0    |
 
-Ein `normal`-Task (45) der morgen fällig ist erreicht Score **65** und landet damit zwischen `high` (75) und `medium-high` (60) – obwohl er nominell niedriger eingestuft ist.
+A `normal` task (45) due tomorrow reaches a score of **65**, placing it between
+`high` (75) and `medium-high` (60) – even though it is nominally ranked lower.
 
-### Dependency-Boost
+### Dependency Boost
 
-+5 pro wartendem Task, max. **+15**.
++5 per waiting task, max. **+15**.
 
-### Aging-Effekt (basiert auf `updatedAt`)
+### Aging Effect (based on `updatedAt`)
 
-| Prio-Stufe                                        | Effekt                                           |
-|---------------------------------------------------|--------------------------------------------------|
-| `critical`, `high`                                | Boost: +1 pro 4 Wochen, max. **+10**             |
-| `medium-high`, `normal`, `low`, `verylow`, `someday` | Penalty: −10 nach 3 Mon., −20 nach 6 Mon. (Max.) |
+| Priority level                                       | Effect                                            |
+|------------------------------------------------------|---------------------------------------------------|
+| `critical`, `high`                                   | Boost: +1 per 4 weeks, max. **+10**               |
+| `medium-high`, `normal`, `low`, `verylow`, `someday` | Penalty: −10 after 3 months, −20 after 6 months (max.) |
 
-Bearbeiten eines Tasks (Speichern) setzt `updatedAt` zurück → Penalty-Lauf startet neu.
-Maximum: **−20 Punkte** (= 2 Prio-Stufen), danach kein weiterer Abfall.
+Saving a task (any edit) resets `updatedAt` → the penalty clock restarts.
+Maximum: **−20 points** (= 2 priority levels), no further drop after that.
 
-### Blocked-Penalty
+### Blocked Penalty
 
-−30 wenn mindestens ein offener Blocker-Task vorhanden ist.
+−30 if at least one open blocker task exists.
 
-### Score-Filter (Slider)
+### Score Filter (Slider)
 
-In der App gibt es einen Score-Slider (0–90). Er filtert direkt auf den berechneten Score –
-Aging ist damit automatisch berücksichtigt: ein 6 Monate alter `medium-high`-Task (Score ~40)
-verschwindet beim Slider-Wert 45, obwohl seine nominelle Prio höher ist als `normal`.
+The app has a score slider (0–90). It filters directly on the calculated score –
+aging is automatically accounted for: a 6-month-old `medium-high` task (score ~40)
+disappears at slider value 45, even though its nominal priority is higher than `normal`.
 
 ---
 
-## Lizenz
+## License
 
 MIT
