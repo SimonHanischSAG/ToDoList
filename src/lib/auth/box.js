@@ -10,7 +10,7 @@
 import { browser } from '$app/environment';
 
 // ── Configuration ──────────────────────────────────────────────────────────
-const CLIENT_ID     = import.meta.env.VITE_BOX_CLIENT_ID     ?? '57mjnjrkdl2787qrsbcmk3zczhwa2en6';
+const CLIENT_ID     = import.meta.env.VITE_BOX_CLIENT_ID     ?? '';
 const CLIENT_SECRET = import.meta.env.VITE_BOX_CLIENT_SECRET ?? '';
 const REDIRECT_URI = browser
 	? window.location.origin + window.location.pathname.replace(/\/$/, '') + '/'

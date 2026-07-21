@@ -54,10 +54,9 @@ export { syncFromBox as syncFromStorage, schedulePush, retryFailedSyncs } from '
 ```
 
 **Box-Setup:**
-- Client ID: `57mjnjrkdl2787qrsbcmk3zczhwa2en6` (produktiver Box-Account)
+- Client ID: GitHub Secret `VITE_BOX_CLIENT_ID` (nicht im Code!)
 - Client Secret: GitHub Secret `VITE_BOX_CLIENT_SECRET` (nicht im Code!)
 - Redirect URI: `https://simonhanischsag.github.io/ToDoList/`
-- GitHub Secret `VITE_BOX_CLIENT_ID`: produktive Client ID
 
 ---
 
