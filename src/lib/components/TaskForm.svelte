@@ -85,6 +85,34 @@
 	}
 	let markAsDone = $state(false);
 
+	/** Gibt true zurück, wenn der Nutzer etwas geändert hat */
+	function isDirty() {
+		if (!isEdit) {
+			// Neuer Task: dirty wenn irgendetwas befüllt wurde
+			return (
+				title.trim() !== '' ||
+				description.trim() !== '' ||
+				comments.trim() !== '' ||
+				priority !== 'normal' ||
+				area.trim() !== (tasks.activeArea ?? '') ||
+				topic.trim() !== '' ||
+				dueDate !== '' ||
+				tags.length > 0
+			);
+		}
+		// Edit: dirty wenn sich etwas gegenüber dem Original geändert hat
+		return (
+			title.trim()       !== (t?.title       ?? '') ||
+			description.trim() !== (t?.description ?? '') ||
+			comments.trim()    !== (t?.comments    ?? '') ||
+			priority           !== (t?.priority    ?? 'normal') ||
+			area.trim()        !== (t?.area        ?? '') ||
+			topic.trim()       !== (t?.topic       ?? '') ||
+			dueDate            !== (t?.dueDate      ?? '') ||
+			JSON.stringify(tags) !== JSON.stringify(t?.tags ?? [])
+		);
+	}
+
 	/** Returns a date as a YYYY-MM-DD string */
 	function toDateStr(date) {
 		return date.toISOString().slice(0, 10);
@@ -173,7 +201,7 @@
 <dialog
 	class="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-start justify-center p-4 pt-8 sm:pt-6 m-0 w-full h-full max-w-none max-h-none border-0"
 	aria-label={isEdit ? 'Edit task' : 'New task'}
-	onmousedown={(e) => e.target === e.currentTarget && onclose()}
+	onmousedown={(e) => { if (e.target === e.currentTarget && !isDirty()) onclose(); }}
 	open
 >
 	<div class="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-2xl p-8 space-y-4 shadow-xl max-h-[95vh] overflow-y-auto">
