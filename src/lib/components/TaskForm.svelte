@@ -54,6 +54,27 @@
 	let areaIndex     = $state(-1);
 	let topicIndex    = $state(-1);
 
+	/** @type {HTMLUListElement} */
+	let areaListEl;
+	/** @type {HTMLUListElement} */
+	let topicListEl;
+
+	$effect(() => {
+		if (areaIndex >= 0 && areaListEl) {
+			/** @type {HTMLElement | null} */
+			const item = areaListEl.querySelectorAll('li')[areaIndex] ?? null;
+			item?.scrollIntoView({ block: 'nearest' });
+		}
+	});
+
+	$effect(() => {
+		if (topicIndex >= 0 && topicListEl) {
+			/** @type {HTMLElement | null} */
+			const item = topicListEl.querySelectorAll('li')[topicIndex] ?? null;
+			item?.scrollIntoView({ block: 'nearest' });
+		}
+	});
+
 	const areaSuggestions = $derived(
 		areaFocused
 			? tasks.areas.filter(a => a.toLowerCase().includes(area.toLowerCase()))
@@ -312,7 +333,7 @@
 								class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
 							/>
 							{#if areaSuggestions.length > 0}
-								<ul class="absolute z-50 left-0 right-0 mt-0.5 bg-white border border-ibm-gray-dark rounded-md shadow-md max-h-40 overflow-y-auto text-sm">
+									<ul bind:this={areaListEl} class="absolute z-50 left-0 right-0 mt-0.5 bg-white border border-ibm-gray-dark rounded-md shadow-md max-h-40 overflow-y-auto text-sm">
 									{#each areaSuggestions as suggestion, i}
 										<li>
 											<button
@@ -343,7 +364,7 @@
 								class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
 							/>
 							{#if topicSuggestions.length > 0}
-								<ul class="absolute z-50 left-0 right-0 mt-0.5 bg-white border border-ibm-gray-dark rounded-md shadow-md max-h-40 overflow-y-auto text-sm">
+									<ul bind:this={topicListEl} class="absolute z-50 left-0 right-0 mt-0.5 bg-white border border-ibm-gray-dark rounded-md shadow-md max-h-40 overflow-y-auto text-sm">
 									{#each topicSuggestions as suggestion, i}
 										<li>
 											<button
