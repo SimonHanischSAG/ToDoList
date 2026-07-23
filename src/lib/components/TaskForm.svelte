@@ -61,19 +61,34 @@
 
 	$effect(() => {
 		if (areaIndex >= 0 && areaListEl) {
-			/** @type {HTMLElement | null} */
-			const item = areaListEl.querySelectorAll('li')[areaIndex] ?? null;
-			item?.scrollIntoView({ block: 'nearest' });
+			const item = /** @type {HTMLElement|null} */ (areaListEl.querySelectorAll('li')[areaIndex] ?? null);
+			if (item) scrollListToItem(areaListEl, item);
 		}
 	});
 
 	$effect(() => {
 		if (topicIndex >= 0 && topicListEl) {
-			/** @type {HTMLElement | null} */
-			const item = topicListEl.querySelectorAll('li')[topicIndex] ?? null;
-			item?.scrollIntoView({ block: 'nearest' });
+			const item = /** @type {HTMLElement|null} */ (topicListEl.querySelectorAll('li')[topicIndex] ?? null);
+			if (item) scrollListToItem(topicListEl, item);
 		}
 	});
+
+	/**
+	 * Scrollt den Container so, dass item sichtbar ist – ohne die Seite zu scrollen.
+	 * @param {HTMLElement} container
+	 * @param {HTMLElement} item
+	 */
+	function scrollListToItem(container, item) {
+		const itemTop    = item.offsetTop;
+		const itemBottom = itemTop + item.offsetHeight;
+		const visTop     = container.scrollTop;
+		const visBottom  = visTop + container.clientHeight;
+		if (itemTop < visTop) {
+			container.scrollTop = itemTop;
+		} else if (itemBottom > visBottom) {
+			container.scrollTop = itemBottom - container.clientHeight;
+		}
+	}
 
 	const areaSuggestions = $derived(
 		areaFocused
