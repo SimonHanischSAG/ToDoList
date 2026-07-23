@@ -21,6 +21,13 @@
 	import History     from '@tiptap/extension-history';
 	import { sinkListItem, liftListItem } from 'prosemirror-schema-list';
 
+	/** Strike mit eigenem Shortcut (Ctrl+Shift+S ist in Edge/Chrome belegt) */
+	const StrikeCustom = Strike.extend({
+		addKeyboardShortcuts() {
+			return { 'Mod-Shift-x': () => this.editor.commands.toggleStrike() };
+		}
+	});
+
 	/** @type {{ value: string, placeholder?: string, tabindex?: number }} */
 	let { value = $bindable(''), placeholder = 'Additional details, context, links...', tabindex = 0 } = $props();
 
@@ -32,7 +39,7 @@
 	onMount(() => {
 		editor = new Editor({
 			element: editorEl,
-			extensions: [Document, Paragraph, Text, Bold, Underline, Strike, BulletList, OrderedList, ListItem, HardBreak, History],
+			extensions: [Document, Paragraph, Text, Bold, Underline, StrikeCustom, BulletList, OrderedList, ListItem, HardBreak, History],
 			content: value || '',
 			onUpdate: ({ editor }) => {
 				const html = editor.getHTML();
@@ -149,7 +156,7 @@
 			tabindex="-1"
 			onclick={() => cmd('toggleStrike')}
 			class="toolbar-btn line-through {isStrike ? 'active' : ''}"
-			title="Strikethrough (Ctrl+Shift+S)"
+			title="Strikethrough (Ctrl+Shift+X)"
 		>S</button>
 
 		<div class="w-px h-4 bg-gray-200 mx-1"></div>
