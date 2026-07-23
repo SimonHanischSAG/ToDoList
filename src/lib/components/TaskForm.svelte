@@ -51,6 +51,8 @@
 	// Area / Topic: custom dropdown (datalist is not supported on iOS)
 	let areaFocused   = $state(false);
 	let topicFocused  = $state(false);
+	let areaIndex     = $state(-1);
+	let topicIndex    = $state(-1);
 
 	const areaSuggestions = $derived(
 		areaFocused
@@ -63,6 +65,44 @@
 			? tasks.topics.filter(tp => tp.toLowerCase().includes(topic.toLowerCase()))
 			: []
 	);
+
+	function handleAreaKeydown(e) {
+		if (!areaSuggestions.length) return;
+		if (e.key === 'ArrowDown') {
+			e.preventDefault();
+			areaIndex = (areaIndex + 1) % areaSuggestions.length;
+		} else if (e.key === 'ArrowUp') {
+			e.preventDefault();
+			areaIndex = (areaIndex - 1 + areaSuggestions.length) % areaSuggestions.length;
+		} else if (e.key === 'Enter' && areaIndex >= 0) {
+			e.preventDefault();
+			area = areaSuggestions[areaIndex];
+			areaFocused = false;
+			areaIndex = -1;
+		} else if (e.key === 'Escape') {
+			areaFocused = false;
+			areaIndex = -1;
+		}
+	}
+
+	function handleTopicKeydown(e) {
+		if (!topicSuggestions.length) return;
+		if (e.key === 'ArrowDown') {
+			e.preventDefault();
+			topicIndex = (topicIndex + 1) % topicSuggestions.length;
+		} else if (e.key === 'ArrowUp') {
+			e.preventDefault();
+			topicIndex = (topicIndex - 1 + topicSuggestions.length) % topicSuggestions.length;
+		} else if (e.key === 'Enter' && topicIndex >= 0) {
+			e.preventDefault();
+			topic = topicSuggestions[topicIndex];
+			topicFocused = false;
+			topicIndex = -1;
+		} else if (e.key === 'Escape') {
+			topicFocused = false;
+			topicIndex = -1;
+		}
+	}
 
 	/** Add a tag (prevent duplicates) */
 	function addTag(value) {
@@ -266,23 +306,24 @@
 							bind:value={area}
 							tabindex="5"
 							autocomplete="off"
-							onfocus={() => (areaFocused = true)}
-							onblur={() => setTimeout(() => (areaFocused = false), 150)}
-							class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
-						/>
-						{#if areaSuggestions.length > 0}
-							<ul class="absolute z-50 left-0 right-0 mt-0.5 bg-white border border-ibm-gray-dark rounded-md shadow-md max-h-40 overflow-y-auto text-sm">
-								{#each areaSuggestions as suggestion}
-									<li>
-										<button
-											type="button"
-											class="w-full text-left px-3 py-2 hover:bg-blue-50 hover:text-ibm-blue"
-											onmousedown={() => { area = suggestion; areaFocused = false; }}
-										>{suggestion}</button>
-									</li>
-								{/each}
-							</ul>
-						{/if}
+							onfocus={() => { areaFocused = true; areaIndex = -1; }}
+								onblur={() => setTimeout(() => { areaFocused = false; areaIndex = -1; }, 150)}
+								onkeydown={handleAreaKeydown}
+								class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
+							/>
+							{#if areaSuggestions.length > 0}
+								<ul class="absolute z-50 left-0 right-0 mt-0.5 bg-white border border-ibm-gray-dark rounded-md shadow-md max-h-40 overflow-y-auto text-sm">
+									{#each areaSuggestions as suggestion, i}
+										<li>
+											<button
+												type="button"
+												class="w-full text-left px-3 py-2 hover:bg-blue-50 hover:text-ibm-blue {i === areaIndex ? 'bg-blue-50 text-ibm-blue' : ''}"
+												onmousedown={() => { area = suggestion; areaFocused = false; areaIndex = -1; }}
+											>{suggestion}</button>
+										</li>
+									{/each}
+								</ul>
+							{/if}
 					</div>
 				</div>
 		
@@ -296,18 +337,19 @@
 							bind:value={topic}
 							tabindex="6"
 							autocomplete="off"
-							onfocus={() => (topicFocused = true)}
-							onblur={() => setTimeout(() => (topicFocused = false), 150)}
-							class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
-						/>
-						{#if topicSuggestions.length > 0}
-							<ul class="absolute z-50 left-0 right-0 mt-0.5 bg-white border border-ibm-gray-dark rounded-md shadow-md max-h-40 overflow-y-auto text-sm">
-								{#each topicSuggestions as suggestion}
-									<li>
-										<button
-											type="button"
-											class="w-full text-left px-3 py-2 hover:bg-blue-50 hover:text-ibm-blue"
-											onmousedown={() => { topic = suggestion; topicFocused = false; }}
+							onfocus={() => { topicFocused = true; topicIndex = -1; }}
+								onblur={() => setTimeout(() => { topicFocused = false; topicIndex = -1; }, 150)}
+								onkeydown={handleTopicKeydown}
+								class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
+							/>
+							{#if topicSuggestions.length > 0}
+								<ul class="absolute z-50 left-0 right-0 mt-0.5 bg-white border border-ibm-gray-dark rounded-md shadow-md max-h-40 overflow-y-auto text-sm">
+									{#each topicSuggestions as suggestion, i}
+										<li>
+											<button
+												type="button"
+												class="w-full text-left px-3 py-2 hover:bg-blue-50 hover:text-ibm-blue {i === topicIndex ? 'bg-blue-50 text-ibm-blue' : ''}"
+												onmousedown={() => { topic = suggestion; topicFocused = false; topicIndex = -1; }}
 										>{suggestion}</button>
 									</li>
 								{/each}
