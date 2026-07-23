@@ -13,6 +13,7 @@
 	import Text        from '@tiptap/extension-text';
 	import Bold        from '@tiptap/extension-bold';
 	import Underline   from '@tiptap/extension-underline';
+	import Strike      from '@tiptap/extension-strike';
 	import BulletList  from '@tiptap/extension-bullet-list';
 	import OrderedList from '@tiptap/extension-ordered-list';
 	import ListItem    from '@tiptap/extension-list-item';
@@ -31,7 +32,7 @@
 	onMount(() => {
 		editor = new Editor({
 			element: editorEl,
-			extensions: [Document, Paragraph, Text, Bold, Underline, BulletList, OrderedList, ListItem, HardBreak, History],
+			extensions: [Document, Paragraph, Text, Bold, Underline, Strike, BulletList, OrderedList, ListItem, HardBreak, History],
 			content: value || '',
 			onUpdate: ({ editor }) => {
 				const html = editor.getHTML();
@@ -90,6 +91,7 @@
 	// Reactive toolbar states
 	let isBold      = $state(false);
 	let isUnderline = $state(false);
+	let isStrike    = $state(false);
 	let isBullet    = $state(false);
 	let isOrdered   = $state(false);
 	let isInList    = $state(false);
@@ -102,6 +104,7 @@
 	function updateToolbar() {
 		isBold      = editor.isActive('bold');
 		isUnderline = editor.isActive('underline');
+		isStrike    = editor.isActive('strike');
 		isBullet    = editor.isActive('bulletList');
 		isOrdered   = editor.isActive('orderedList');
 		isInList    = editor.isActive('listItem');
@@ -140,6 +143,14 @@
 			class="toolbar-btn underline {isUnderline ? 'active' : ''}"
 			title="Underline (Ctrl+U)"
 		>U</button>
+
+		<button
+			type="button"
+			tabindex="-1"
+			onclick={() => cmd('toggleStrike')}
+			class="toolbar-btn line-through {isStrike ? 'active' : ''}"
+			title="Strikethrough (Ctrl+Shift+S)"
+		>S</button>
 
 		<div class="w-px h-4 bg-gray-200 mx-1"></div>
 
