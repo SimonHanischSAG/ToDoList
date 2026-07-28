@@ -226,14 +226,15 @@
 		}
 	];
 
-	/** Ctrl+S speichert aus jedem Feld heraus */
+	/** Ctrl+S → Save and Close */
 	function handleKeydown(e) {
 		if (e.ctrlKey && e.key === 's') {
 			e.preventDefault();
-			handleSubmit();
+			handleSubmitAndClose();
 		}
 	}
 
+	/** Speichert den Task, lässt den Dialog aber offen */
 	async function handleSubmit(e) {
 		e?.preventDefault();
 		if (!title.trim()) return;
@@ -265,10 +266,16 @@
 						dueDate:     dueDate || null
 					});
 				}
-			onclose();
 		} finally {
 			saving = false;
 		}
+	}
+
+	/** Speichert den Task und schließt den Dialog (Ctrl+S) */
+	async function handleSubmitAndClose(e) {
+		e?.preventDefault();
+		await handleSubmit();
+		onclose();
 	}
 </script>
 
@@ -463,19 +470,30 @@
 					</label>
 				{/if}
 	
-				<!-- Speichern: tabindex 9 -->
-				<button
-					type="submit"
-					tabindex={isEdit ? 9 : 8}
-					disabled={saving || !title.trim()}
-					title="Speichern (Ctrl+S)"
-					class="relative group w-full bg-ibm-blue hover:bg-ibm-blue-dark disabled:opacity-50 text-white font-semibold py-2.5 rounded-md text-sm transition-colors"
-				>
-					{saving ? 'Saving...' : 'Save'}
-					<span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-0.5 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity">
-						Ctrl+S
-					</span>
-				</button>
+				<!-- Buttons: Save (offen lassen) + Save and Close (Ctrl+S) -->
+				<div class="flex gap-2">
+					<button
+						type="submit"
+						tabindex={isEdit ? 9 : 8}
+						disabled={saving || !title.trim()}
+						class="flex-1 border border-ibm-blue text-ibm-blue hover:bg-blue-50 disabled:opacity-50 font-semibold py-2.5 rounded-md text-sm transition-colors"
+					>
+						{saving ? 'Saving...' : 'Save'}
+					</button>
+					<button
+						type="button"
+						tabindex={isEdit ? 10 : 9}
+						disabled={saving || !title.trim()}
+						onclick={handleSubmitAndClose}
+						title="Ctrl+S"
+						class="relative group flex-1 bg-ibm-blue hover:bg-ibm-blue-dark disabled:opacity-50 text-white font-semibold py-2.5 rounded-md text-sm transition-colors"
+					>
+						{saving ? 'Saving...' : 'Save and Close'}
+						<span class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-0.5 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity">
+							Ctrl+S
+						</span>
+					</button>
+				</div>
 			</form>
 	</div>
 </dialog>
