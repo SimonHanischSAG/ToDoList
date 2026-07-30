@@ -302,7 +302,7 @@ export function stopSync() {
 function _onPushError(err) {
 	const msg = String(err.message ?? err);
 	if (msg.startsWith('CONFLICT')) {
-		_pushError = 'Sync conflict: another device saved changes at the same time. Your local changes are kept. The remote version will be reloaded on the next sync.';
+		_pushError = 'Sync conflict: a concurrent change could not be merged automatically. Please reload the page to get the latest version.';
 	} else {
 		_pushError = `Your changes could not be saved: ${msg}`;
 	}

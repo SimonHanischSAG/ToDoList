@@ -7,15 +7,18 @@
  * Reads go against the local IndexedDB cache (Dexie).
  * Writes are applied locally immediately and synced to Box with debounce.
  *
- * Concurrent safety (optimistic locking):
+ * Concurrent safety (optimistic locking + merge):
  *   - Each file version has an ETag (SHA-1 of the file in Box).
  *   - On upload we send If-Match with the known ETag.
- *   - On a 412 conflict the upload is aborted and an error is thrown.
- *     The caller continues working with the local state; the next poll cycle
- *     will reload the remote version.
+ *   - On a 412 conflict the remote tasks are fetched, merged with the local
+ *     state (newer updatedAt wins per task), written back to IndexedDB, and
+ *     the upload is retried once with the merged content.
  *   - startPolling() checks the ETag every 30 seconds (no body download)
  *     and only reloads when the file has changed – and only when no local
  *     upload is pending.
+ *   - BroadcastChannel 'todos-sync': after every successful push the sending
+ *     tab notifies all other tabs in the same browser so they reload from
+ *     IndexedDB immediately (no need to wait for the next poll cycle).
  */
 
 import { getToken, logout, refreshToken } from '../auth/box.js';
@@ -52,6 +55,13 @@ Please do NOT rename or move this folder.
 `;
 
 // ── Internal state ─────────────────────────────────────────────────────────
+
+/**
+ * BroadcastChannel for same-browser tab synchronisation.
+ * After a successful push the active tab notifies all other tabs so they
+ * reload from the shared IndexedDB immediately instead of waiting up to 30 s.
+ */
+const bc = new BroadcastChannel('todos-sync');
 
 /** Debounce timer for uploads */
 let uploadTimer = null;
@@ -260,12 +270,48 @@ async function fetchRemoteEtag() {
 }
 
 /**
+ * Merges two task arrays by taking the version with the newer updatedAt per id.
+ * Tasks present only in one array are always kept.
+ * @param {import('../model/task.js').Task[]} local
+ * @param {import('../model/task.js').Task[]} remote
+ * @returns {import('../model/task.js').Task[]}
+ */
+function mergeTasks(local, remote) {
+	/** @type {Map<string, import('../model/task.js').Task>} */
+	const map = new Map(remote.map(t => [t.id, t]));
+	for (const localTask of local) {
+		const remoteTask = map.get(localTask.id);
+		// Task only exists locally (newly added) or local version is newer → keep local
+		if (!remoteTask || localTask.updatedAt > remoteTask.updatedAt) {
+			map.set(localTask.id, localTask);
+		}
+	}
+	return [...map.values()];
+}
+
+/**
+ * Downloads todos.json from Box and returns the parsed task array.
+ * Does NOT update IndexedDB or knownEtag – used internally for conflict resolution.
+ * @returns {Promise<import('../model/task.js').Task[]>}
+ */
+async function fetchRemoteTasks() {
+	const id = await findFile();
+	if (!id) return [];
+	const res = await boxFetch(`${BOX_API}/files/${id}/content`);
+	if (!res.ok) throw new Error(`Box download error (conflict fetch): ${res.status}`);
+	return res.json();
+}
+
+/**
  * Writes the current local cache as todos.json to Box.
  * Uses optimistic locking (If-Match with known ETag).
- * On 412 conflict: throws CONFLICT_ERROR – caller keeps working with local state.
+ * On 412 conflict: fetches the remote tasks, merges them with the local state
+ * (newer updatedAt wins per task), persists the merged result to IndexedDB,
+ * and retries the upload once.
+ * @param {boolean} [_isRetry]  Internal flag – prevents infinite retry loops.
  * @returns {Promise<void>}
  */
-export async function pushToBox() {
+export async function pushToBox(_isRetry = false) {
 	const local  = await db.tasks.toArray();
 	const body   = JSON.stringify(local, null, 2);
 	const folder = await getOrCreateFolder();
@@ -300,13 +346,21 @@ export async function pushToBox() {
 		headers: extraHeaders
 	});
 
-	// 412 Precondition Failed → another device has written in the meantime.
-	// We do NOT merge – abort and let the next poll reload the remote version.
+	// 412 Precondition Failed → another tab/device has written in the meantime.
+	// Fetch the remote version, merge by updatedAt, persist, and retry once.
 	if (res.status === 412) {
-		// Invalidate the cached file ID so the next upload re-fetches metadata.
+		if (_isRetry) {
+			// Should not happen in practice, but guard against infinite loops.
+			throw new Error('CONFLICT: merge retry also failed – giving up.');
+		}
+		console.info('[Box] 412 conflict – merging remote tasks and retrying…');
 		fileId    = null;
 		knownEtag = null;
-		throw new Error('CONFLICT: remote file has changed – upload aborted. Remote version will be loaded on next sync.');
+		const remote = await fetchRemoteTasks();
+		const merged = mergeTasks(local, remote);
+		await db.tasks.clear();
+		await db.tasks.bulkPut(merged);
+		return pushToBox(true);
 	}
 
 	if (!res.ok) throw new Error(`Box upload error: ${res.status} ${await res.text()}`);
@@ -319,6 +373,8 @@ export async function pushToBox() {
 
 /**
  * Schedules a debounced upload to Box.
+ * After a successful push, notifies all other tabs via BroadcastChannel so
+ * they reload from the shared IndexedDB without waiting for the next poll.
  * @param {((err: Error) => void) | undefined} [onError]  Optional callback invoked on push failure.
  */
 export function schedulePush(onError) {
@@ -327,6 +383,7 @@ export function schedulePush(onError) {
 		uploadTimer = null;
 		try {
 			await pushToBox();
+			bc.postMessage({ type: 'tasks-changed' }); // notify other tabs
 		} catch (err) {
 			console.error('[Box] Push failed:', err);
 			await db.syncQueue.add({ timestamp: new Date().toISOString(), error: String(err) });
@@ -354,10 +411,24 @@ export async function retryFailedSyncs() {
  * Every 30 seconds the ETag is checked. If it has changed,
  * the data is reloaded and `callback` is called.
  *
+ * Also registers a BroadcastChannel listener so that a push by another tab
+ * in the same browser triggers an immediate IndexedDB reload.
+ *
  * @param {() => void} callback  Called after new remote data has been loaded
  */
 export function startPolling(callback) {
 	onRemoteChange = callback;
+
+	// Listen for same-browser tab notifications (Option 1).
+	// The sending tab has already written the merged data to IndexedDB, so we
+	// only need to reload from there – no extra Box API call required.
+	bc.onmessage = async (e) => {
+		if (e.data?.type !== 'tasks-changed') return;
+		if (uploadTimer !== null) return; // we are the ones currently pushing
+		await syncFromBox();
+		onRemoteChange?.();
+	};
+
 	if (pollTimer) return; // already active
 
 	pollTimer = setInterval(async () => {
@@ -381,13 +452,14 @@ export function startPolling(callback) {
 }
 
 /**
- * Stops polling (e.g. on logout).
+ * Stops polling and closes the BroadcastChannel (e.g. on logout).
  */
 export function stopPolling() {
 	if (pollTimer) {
 		clearInterval(pollTimer);
 		pollTimer = null;
 	}
+	bc.onmessage = null;
 	onRemoteChange = null;
 	knownEtag = null;
 }
