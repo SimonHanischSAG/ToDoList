@@ -401,13 +401,25 @@
 					</div>
 					<div>
 						<label class="block text-xs font-semibold text-ibm-text-muted mb-1" for="task-due">Due date</label>
-						<input
-							id="task-due"
-							type="date"
-							bind:value={dueDate}
-							tabindex="-1"
-							class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue"
-						/>
+						<div class="relative">
+							<input
+								id="task-due"
+								type="date"
+								bind:value={dueDate}
+								tabindex="-1"
+								class="w-full border border-ibm-gray-dark rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ibm-blue {dueDate ? 'pr-8' : ''}"
+							/>
+							{#if dueDate}
+								<button
+									type="button"
+									tabindex="-1"
+									onclick={() => (dueDate = '')}
+									class="absolute right-2 top-1/2 -translate-y-1/2 text-ibm-text-muted hover:text-red-500 transition-colors leading-none text-base"
+									aria-label="Clear due date"
+									title="Clear due date"
+								>×</button>
+							{/if}
+						</div>
 						<div class="flex flex-wrap gap-1 mt-1.5">
 							{#each quickDates as qd}
 								<button

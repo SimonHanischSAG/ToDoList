@@ -179,7 +179,7 @@
 					{#if !verbose && (task.description || task.comments || task.blockedBy.length > 0 || task.dueDate)}
 						<button
 							onclick={(e) => { e.stopPropagation(); _expanded = !_expanded; }}
-							class="text-ibm-text-muted hover:text-ibm-text transition-colors p-1 text-xs"
+							class="text-ibm-text-muted hover:text-ibm-text transition-colors p-1.5 text-base"
 							title={_expanded ? 'Show less' : 'Show details'}
 							aria-label="Details"
 						>{_expanded ? '▲' : '▼'}</button>
