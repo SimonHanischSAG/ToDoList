@@ -289,8 +289,13 @@
 >
 	<div class="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-2xl p-8 space-y-4 shadow-xl max-h-[95vh] overflow-y-auto">
 		<div class="flex items-center justify-between">
-			<h2 class="font-bold text-ibm-text">{isEdit ? 'Edit task' : 'New task'}</h2>
-				<button onclick={onclose} tabindex="-1" class="text-ibm-text-muted hover:text-ibm-text" aria-label="Close" title="Close window">✕</button>
+			<div>
+				<h2 class="font-bold text-ibm-text">{isEdit ? 'Edit task' : 'New task'}</h2>
+				{#if isEdit && t?.createdAt}
+					<p class="text-xs text-ibm-text-muted mt-0.5">Created: {new Date(t.createdAt).toLocaleString()}</p>
+				{/if}
+			</div>
+			<button onclick={onclose} tabindex="-1" class="text-ibm-text-muted hover:text-ibm-text" aria-label="Close" title="Close window">✕</button>
 		</div>
 
 		<form onsubmit={handleSubmit} onkeydown={handleKeydown} class="space-y-3">
