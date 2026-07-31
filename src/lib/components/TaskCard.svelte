@@ -58,7 +58,7 @@
 
 	function deadlineText(dueDate) {
 		if (!dueDate) return null;
-		const days = Math.round((localEndOfDay(dueDate) - new Date()) / 86400000);
+		const days = Math.floor((localEndOfDay(dueDate) - new Date()) / 86400000);
 		if (days < 0) return `${Math.abs(days)} day${Math.abs(days) === 1 ? '' : 's'} overdue`;
 		if (days === 0) return 'Due today';
 		if (days === 1) return 'Due tomorrow';
