@@ -196,11 +196,11 @@ export async function refreshToken() {
 	_refreshPromise = (async () => {
 		try {
 			const body = new URLSearchParams({
-				grant_type:    'refresh_token',
-				client_id:     CLIENT_ID,
-				client_secret: CLIENT_SECRET,
-				refresh_token: refresh
-			});
+					grant_type:    'refresh_token',
+					client_id:     CLIENT_ID,
+					client_secret: CLIENT_SECRET,
+					refresh_token: refresh
+				});
 			const res = await fetch(BOX_TOKEN_URL, {
 				method:  'POST',
 				headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

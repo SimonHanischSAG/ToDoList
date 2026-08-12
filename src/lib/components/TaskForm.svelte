@@ -288,14 +288,35 @@
 	open
 >
 	<div class="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-2xl p-8 space-y-4 shadow-xl max-h-[95vh] overflow-y-auto">
-		<div class="flex items-center justify-between">
-			<div>
+		<div class="flex items-center justify-between gap-2">
+			<div class="min-w-0">
 				<h2 class="font-bold text-ibm-text">{isEdit ? 'Edit task' : 'New task'}</h2>
 				{#if isEdit && t?.createdAt}
 					<p class="text-xs text-ibm-text-muted mt-0.5">Created: {new Date(t.createdAt).toLocaleString()}</p>
 				{/if}
 			</div>
-			<button onclick={onclose} tabindex="-1" class="text-ibm-text-muted hover:text-ibm-text" aria-label="Close" title="Close window">✕</button>
+			<div class="flex items-center gap-2 shrink-0">
+				<button
+					type="button"
+					tabindex="-1"
+					disabled={saving || !title.trim()}
+					onclick={handleSubmit}
+					class="border border-ibm-blue text-ibm-blue hover:bg-blue-50 disabled:opacity-50 font-semibold px-3 py-1 rounded-md text-xs transition-colors"
+				>
+					{saving ? '…' : 'Save'}
+				</button>
+				<button
+					type="button"
+					tabindex="-1"
+					disabled={saving || !title.trim()}
+					onclick={handleSubmitAndClose}
+					title="Ctrl+S"
+					class="bg-ibm-blue hover:bg-ibm-blue-dark disabled:opacity-50 text-white font-semibold px-3 py-1 rounded-md text-xs transition-colors"
+				>
+					{saving ? '…' : 'Save and Close'}
+				</button>
+				<button onclick={onclose} tabindex="-1" class="text-ibm-text-muted hover:text-ibm-text ml-1" aria-label="Close" title="Close window">✕</button>
+			</div>
 		</div>
 
 		<form onsubmit={handleSubmit} onkeydown={handleKeydown} class="space-y-3">
