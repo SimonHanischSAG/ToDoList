@@ -5,7 +5,7 @@
 -->
 <script>
 	import { onMount } from 'svelte';
-	import { addTask, updateTask, setStatus, tasks } from '$lib/stores/taskStore.svelte.js';
+	import { addTask, updateTask, setStatus, deleteTask, tasks } from '$lib/stores/taskStore.svelte.js';
 	import RichTextEditor from './RichTextEditor.svelte';
 
 	/**
@@ -37,7 +37,8 @@
 	let dueDate     = $state(t?.dueDate     ?? '');
 	let tags        = $state(/** @type {string[]} */ ([...(Array.isArray(t?.tags) ? t.tags : [])]));
 	let tagInput    = $state('');
-	let saving      = $state(false);
+	let saving         = $state(false);
+	let confirmDelete  = $state(false);
 
 	/** Suggestions: all known tags, filtered by current input value */
 	const tagSuggestions = $derived(
@@ -277,6 +278,13 @@
 		await handleSubmit();
 		onclose();
 	}
+
+	/** Löscht den Task nach Bestätigung und schließt den Dialog */
+	async function handleDelete() {
+		if (!t) return;
+		await deleteTask(t.id);
+		onclose();
+	}
 </script>
 
 <!-- Natives dialog-Element: korrekte Accessibility + Escape-Taste -->
@@ -287,7 +295,7 @@
 	onmousedown={(e) => { if (e.target === e.currentTarget && !isDirty()) onclose(); }}
 	open
 >
-	<div class="bg-white rounded-t-2xl sm:rounded-xl w-full max-w-2xl p-8 space-y-4 shadow-xl max-h-[95vh] overflow-y-auto">
+	<div class="relative bg-white rounded-t-2xl sm:rounded-xl w-full max-w-2xl p-8 space-y-4 shadow-xl max-h-[95vh] overflow-y-auto">
 		<div class="flex items-center justify-between gap-2">
 			<div class="min-w-0">
 				<h2 class="font-bold text-ibm-text">{isEdit ? 'Edit task' : 'New task'}</h2>
@@ -315,6 +323,16 @@
 				>
 					{saving ? '…' : 'Save and Close'}
 				</button>
+				{#if isEdit}
+					<button
+						type="button"
+						tabindex="-1"
+						onclick={() => (confirmDelete = true)}
+						class="border border-red-400 text-red-500 hover:bg-red-50 font-semibold px-3 py-1 rounded-md text-xs transition-colors"
+					>
+						Delete
+					</button>
+				{/if}
 				<button onclick={onclose} tabindex="-1" class="text-ibm-text-muted hover:text-ibm-text ml-1" aria-label="Close" title="Close window">✕</button>
 			</div>
 		</div>
@@ -531,7 +549,49 @@
 							Ctrl+S
 						</span>
 					</button>
+					{#if isEdit}
+						<button
+							type="button"
+							tabindex={isEdit ? 11 : -1}
+							onclick={() => (confirmDelete = true)}
+							class="flex-1 border border-red-400 text-red-500 hover:bg-red-50 font-semibold py-2.5 rounded-md text-sm transition-colors"
+						>
+							Delete
+						</button>
+					{/if}
 				</div>
 			</form>
-	</div>
-</dialog>
+	
+			<!-- Bestätigungsdialog: Löschen -->
+			{#if confirmDelete}
+				<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
+				<div
+					class="absolute inset-0 flex items-center justify-center bg-black/30 rounded-t-2xl sm:rounded-xl z-10"
+					onmousedown={(e) => { if (e.target === e.currentTarget) confirmDelete = false; }}
+				>
+					<div class="bg-white rounded-xl shadow-xl p-6 mx-4 w-full max-w-sm space-y-4">
+						<h3 class="font-bold text-ibm-text text-base">Delete task?</h3>
+						<p class="text-sm text-ibm-text-muted">
+							Are you sure you want to delete <span class="font-semibold text-ibm-text">"{title}"</span>? This cannot be undone.
+						</p>
+						<div class="flex gap-2">
+							<button
+								type="button"
+								onclick={() => (confirmDelete = false)}
+								class="flex-1 border border-ibm-gray-dark text-ibm-text hover:bg-gray-50 font-semibold py-2 rounded-md text-sm transition-colors"
+							>
+								Cancel
+							</button>
+							<button
+								type="button"
+								onclick={handleDelete}
+								class="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 rounded-md text-sm transition-colors"
+							>
+								Delete
+							</button>
+						</div>
+					</div>
+				</div>
+			{/if}
+		</div>
+	</dialog>
