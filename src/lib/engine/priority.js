@@ -4,11 +4,16 @@
  *
  * Score formula:
  *   score = basePrio
- *         + deadlineBoost    (the closer the deadline, the higher)
+ *         + deadlineBoost    (the closer the deadline, the higher; overdue tasks get large boost)
  *         + dependencyBoost  (when other tasks are waiting on me)
  *         + agingBoost       (Critical/High only: +max 10 when very old)
  *         - agingPenalty     (Medium-High and below: older since last update → lower score)
  *         - blockedPenalty   (when I am blocked myself)
+ *
+ * Overdue boost (based on daysLeft < 0):
+ *   - Any overdue task receives a large flat boost so it sorts well above non-due tasks.
+ *   - The boost scales with days overdue, capped so the total never exceeds 100.
+ *   - Minimum effective score for an overdue task with any priority: ~85 (for "normal").
  *
  * Aging penalty (based on updatedAt):
  *   - Applies to: medium-high, normal, low, verylow, someday
@@ -68,7 +73,13 @@ export function calcScore(task, allTasks) {
 	// 1. Deadline boost (granular by exact days, so "today" > "in 1 day" > "in 2 days" etc.)
 	if (task.dueDate) {
 		const daysLeft = daysDiff(new Date(), localEndOfDay(task.dueDate));
-		if (daysLeft < 0)        score += 25; // overdue
+		if (daysLeft < 0) {
+			// Overdue: large flat boost + escalation per day overdue.
+			// Flat boost of 40 ensures even a "normal" task (base 45) reaches 85.
+			// Each additional day overdue adds 2 more points (max cap = 55 total overdue boost).
+			const daysOverdue = Math.abs(daysLeft);
+			score += Math.min(55, 40 + daysOverdue * 2);
+		}
 		else if (daysLeft === 0) score += 22; // today
 		else if (daysLeft === 1) score += 20; // tomorrow
 		else if (daysLeft === 2) score += 18; // day after tomorrow
