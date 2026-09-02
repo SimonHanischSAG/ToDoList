@@ -6,8 +6,11 @@
 <script>
 	import { login } from '$lib/auth/box.js';
 
-	/** @type {{ onlocal: () => void }} */
-	let { onlocal } = $props();
+	/**
+	 * @type {{ onlocal: () => void, ibmUser?: boolean }}
+	 * ibmUser defaults to true (safe fallback = IBM branding)
+	 */
+	let { onlocal, ibmUser = true } = $props();
 </script>
 
 <!-- Backdrop -->
@@ -15,7 +18,9 @@
 	<div class="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
 
 		<!-- Title -->
-		<div class="text-lg font-bold text-ibm-text mb-1">Welcome to IBM ToDo List</div>
+		<div class="text-lg font-bold text-ibm-text mb-1">
+			{ibmUser ? 'Welcome to IBM ToDo List' : 'Welcome to ToDo List'}
+		</div>
 		<p class="text-sm text-ibm-text-muted mb-5">
 			Where should your tasks be stored?
 		</p>
@@ -23,12 +28,18 @@
 		<!-- Option 1: Box -->
 		<button
 			onclick={login}
-			class="w-full bg-ibm-blue hover:bg-ibm-blue-dark text-white text-sm font-semibold py-3 px-4 rounded-md transition-colors mb-3 text-left"
+			class="w-full text-white text-sm font-semibold py-3 px-4 rounded-md transition-colors mb-3 text-left
+			       {ibmUser ? 'bg-ibm-blue hover:bg-ibm-blue-dark' : 'bg-priv-teal hover:bg-priv-teal-dark'}"
 		>
 			<div class="font-semibold mb-0.5">☁ Sign in with Box (recommended)</div>
 			<div class="text-xs font-normal opacity-90">
-				Data is stored securely in your personal IBM Box account –
-				available across all devices, no data loss.
+				{#if ibmUser}
+					Data is stored securely in your personal IBM Box account –
+					available across all devices, no data loss.
+				{:else}
+					Data is stored securely in your personal Box account –
+					available across all devices, no data loss.
+				{/if}
 			</div>
 		</button>
 

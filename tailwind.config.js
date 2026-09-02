@@ -11,6 +11,12 @@ export default {
 					'gray-dark': '#e0e0e0',
 					text: '#161616',
 					'text-muted': '#525252'
+				},
+				// Private / personal account theme (teal)
+				priv: {
+					teal: '#0d7377',
+					'teal-dark': '#0a5c60',
+					header: '#14514a'
 				}
 			}
 		}

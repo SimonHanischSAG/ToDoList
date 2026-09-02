@@ -33,7 +33,7 @@ Kein Backend, kein zentraler Server, keine Datenbank. Jeder Nutzer speichert sei
 | Styling | Tailwind CSS 3 |
 | PWA | vite-plugin-pwa (Workbox) |
 | Lokaler Cache | Dexie.js (IndexedDB) |
-| Auth (bereit) | Box OAuth 2.0 PKCE (`src/lib/auth/box.js`) |
+| Auth | Box OAuth 2.0 PKCE (`src/lib/auth/box.js`) |
 | Hosting | GitHub Pages (via GitHub Actions) |
 | CI/CD | `.github/workflows/deploy.yml` |
 
@@ -41,7 +41,7 @@ Kein Backend, kein zentraler Server, keine Datenbank. Jeder Nutzer speichert sei
 
 ## Storage-Modus umschalten
 
-Aktuell aktiv: **Box Cloud-Sync** (IBM Box OAuth 2.0 PKCE).
+Aktuell aktiv: **Box Cloud-Sync** (Box OAuth 2.0 PKCE – funktioniert mit IBM Box und privaten Box-Accounts).
 
 Datei: [`src/lib/storage/index.js`](src/lib/storage/index.js)
 
@@ -58,6 +58,18 @@ export { syncFromBox as syncFromStorage, schedulePush, retryFailedSyncs } from '
 - Client Secret: GitHub Secret `VITE_BOX_CLIENT_SECRET` (nicht im Code!)
 - Redirect URI: `https://simonhanischsag.github.io/ToDoList/`
 
+**Multi-Account-Unterstützung:**
+Die App erkennt nach dem Login automatisch anhand der E-Mail-Domain (`@ibm.com`),
+ob es sich um einen IBM- oder privaten Box-Account handelt:
+- IBM-Account (`@ibm.com`) → IBM-Blau-Theme, Titel „IBM ToDo List"
+- Privater Account (alles andere) → Teal-Theme, Titel „ToDo List"
+
+Die Erkennung erfolgt über `GET /users/me` nach jedem Token-Fetch (kein Extra-Login nötig).
+Fallback: unbekannte Domain → IBM-Branding (kein falsches Downgrading bei IBM-Nutzern).
+
+Für privaten Einsatz eine **eigene Box OAuth App** anlegen (developer.box.com)
+und die eigene `.env.local` mit der privaten `CLIENT_ID` + `CLIENT_SECRET` befüllen.
+
 ---
 
 ## Projektstruktur
@@ -66,7 +78,7 @@ export { syncFromBox as syncFromStorage, schedulePush, retryFailedSyncs } from '
 src/
   lib/
     auth/
-      box.js              Box OAuth 2.0 PKCE-Flow (fertig, wartet auf IBM-Freigabe)
+      box.js              Box OAuth 2.0 PKCE-Flow + isIbmUser() für Account-Erkennung
       msal.js             Azure AD / OneDrive Auth (Fallback, nicht aktiv)
     storage/
       index.js            ← HIER Storage-Backend umschalten
@@ -168,7 +180,7 @@ Beispiel: `normal` (45) + überfällig (+25) = Score **70** → landet zwischen 
 
 ## Offene Punkte
 
-- [ ] IBM Box Admin-Freigabe abwarten (Client ID produktiv schalten)
+- [ ] IBM Box Admin-Freigabe abwarten (Client ID produktiv schalten) – für privaten Einsatz eigene Box-App anlegen
 - [ ] Erledigte Tasks anzeigen / Archiv-Ansicht
 - [ ] Task-Abhängigkeiten (blockedBy) in der UI editierbar machen
 - [ ] Push Notifications für Deadlines (iOS 16.4+, `vite-plugin-pwa` vorbereitet)

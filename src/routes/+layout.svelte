@@ -8,7 +8,7 @@
 	import { browser } from '$app/environment';
 	import { loadTasks, initialSync, stopSync, tasks } from '$lib/stores/taskStore.svelte.js';
 	import { exportToFile, importFromFile, schedulePush } from '$lib/storage/index.js';
-	import { login, handleRedirect, getToken, getUser, logout as boxLogout, startTokenRefreshTimer, refreshToken } from '$lib/auth/box.js';
+	import { login, handleRedirect, getToken, getUser, isIbmUser, logout as boxLogout, startTokenRefreshTimer, refreshToken } from '$lib/auth/box.js';
 	import StoragePrompt from '$lib/components/StoragePrompt.svelte';
 
 	const STORAGE_CHOICE_KEY = 'ibmtodo_storage_choice'; // 'box' | 'local'
@@ -20,6 +20,8 @@
 	let importMsg = $state('');
 	let loggedIn = $state(false);
 	let user = $state(/** @type {{ name: string, login: string } | null} */ (null));
+	/** true = IBM account (or unknown), false = private/personal Box account */
+	let ibmUser = $state(true);
 
 	onMount(async () => {
 		if (!browser) return;
@@ -34,7 +36,8 @@
 		}
 
 		loggedIn = !!getToken();
-		user = getUser();
+		user     = getUser();
+		ibmUser  = isIbmUser();
 
 		// After successful Box login: save choice and start token refresh timer
 		if (loggedIn) {
@@ -94,13 +97,15 @@
 
 <!-- Storage selection on first launch -->
 {#if showPrompt}
-	<StoragePrompt onlocal={chooseLocal} />
+	<StoragePrompt onlocal={chooseLocal} {ibmUser} />
 {/if}
 
 {#if !ready}
 	<div class="flex items-center justify-center min-h-screen bg-ibm-gray">
 		<div class="text-center">
-			<div class="text-4xl font-bold text-ibm-blue mb-2">IBM ToDo List</div>
+			<div class="text-4xl font-bold mb-2 {ibmUser ? 'text-ibm-blue' : 'text-priv-teal'}">
+				{ibmUser ? 'IBM ToDo List' : 'ToDo List'}
+			</div>
 			<div class="text-ibm-text-muted text-sm">Loading…</div>
 		</div>
 	</div>
@@ -108,8 +113,13 @@
 {:else}
 	<!-- Outer wrapper: exactly viewport height, no own scrolling -->
 	<div class="bg-ibm-gray flex flex-col" style="height: 100dvh; overflow: hidden;">
-		<header class="bg-ibm-text shadow-sm px-4 py-3 flex items-center justify-between flex-shrink-0">
-			<span class="text-white font-bold text-lg">IBM ToDo List</span>
+		<header
+			class="shadow-sm px-4 py-3 flex items-center justify-between flex-shrink-0
+			       {ibmUser ? 'bg-ibm-text' : 'bg-priv-header'}"
+		>
+			<span class="text-white font-bold text-lg">
+				{ibmUser ? 'IBM ToDo List' : 'ToDo List'}
+			</span>
 			<div class="flex items-center gap-3">
 				{#if loggedIn}
 					<!-- Logged in: Export / Import / User / Logout -->
@@ -144,7 +154,9 @@
 					<!-- Not logged in: login button -->
 					<button
 						onclick={login}
-						class="bg-ibm-blue hover:bg-ibm-blue-dark text-white text-xs font-semibold px-3 py-1 rounded transition-colors"
+						class="{ibmUser
+							? 'bg-ibm-blue hover:bg-ibm-blue-dark'
+							: 'bg-priv-teal hover:bg-priv-teal-dark'} text-white text-xs font-semibold px-3 py-1 rounded transition-colors"
 					>
 						Sign in with Box
 					</button>
