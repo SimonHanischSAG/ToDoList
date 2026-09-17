@@ -32,8 +32,8 @@ export const tasks = {
 	get all() { return _tasks; },
 	get ranked() { return rankTasks(_tasks); },
 	get focus() { return getFocusTasks(_tasks, { area: _activeAreas[0] ?? '' }); },
-	get areas()  { return getAreas(_tasks); },
-	get topics() { return getTopics(_tasks); },
+	get areas()  { return getAreas(_tasks.filter(t => t.status !== 'done')); },
+	get topics() { return getTopics(_tasks.filter(t => t.status !== 'done')); },
 
 	/** @returns {string[]} */
 	get activeAreas() { return _activeAreas; },
