@@ -67,6 +67,12 @@ const bc = new BroadcastChannel('todos-sync');
 let uploadTimer = null;
 const UPLOAD_DEBOUNCE_MS = 2000;
 
+/**
+ * True while pushToBox() is actively running (not just scheduled).
+ * Guards against syncFromBox() wiping IndexedDB during an in-flight upload.
+ */
+let isUploading = false;
+
 /** Cached IDs to avoid repeated folder lookups */
 let folderId = null;
 let fileId   = null;
@@ -223,7 +229,13 @@ export async function syncFromBox() {
 	const id = await findFile();
 
 	if (!id) {
-		await db.tasks.clear();
+		// No remote file yet – only clear local DB if it is already empty
+		// (first-time setup). Never wipe existing local tasks just because the
+		// remote file is temporarily missing.
+		const localCount = await db.tasks.count();
+		if (localCount === 0) {
+			await db.tasks.clear();
+		}
 		return;
 	}
 
@@ -245,6 +257,18 @@ export async function syncFromBox() {
 
 	/** @type {import('../model/task.js').Task[]} */
 	const tasks = await res.json();
+
+	// Safety guard: refuse to replace a non-empty local DB with an empty remote
+	// list. This prevents accidental data loss if todos.json is temporarily
+	// empty (e.g. during a Box outage, a broken upload, or a race condition).
+	if (tasks.length === 0) {
+		const localCount = await db.tasks.count();
+		if (localCount > 0) {
+			console.warn('[Box] Remote todos.json is empty but local DB has tasks – skipping overwrite.');
+			return;
+		}
+	}
+
 	await db.tasks.clear();
 	await db.tasks.bulkPut(tasks);
 }
@@ -312,11 +336,24 @@ async function fetchRemoteTasks() {
  * @returns {Promise<void>}
  */
 export async function pushToBox(_isRetry = false) {
+	isUploading = true;
+	try {
 	const local  = await db.tasks.toArray();
 	const body   = JSON.stringify(local, null, 2);
+
+	// Safety guard: never push an empty list to Box if it would silently wipe
+	// all tasks. An empty list is only valid on the very first app start when
+	// there are no tasks at all AND no file exists in Box yet.
+	const existingId = await findFile();
+	if (local.length === 0 && existingId !== null) {
+		console.warn('[Box] Refusing to push empty task list – remote file exists. Skipping upload.');
+		isUploading = false;
+		return;
+	}
+
 	const folder = await getOrCreateFolder();
 	await ensureReadme(folder);
-	const id     = await findFile();
+	const id     = existingId ?? await findFile();
 
 	const formData = new FormData();
 	formData.append(
@@ -369,6 +406,9 @@ export async function pushToBox(_isRetry = false) {
 	const result = await res.json();
 	fileId    = result.entries?.[0]?.id    ?? fileId;
 	knownEtag = result.entries?.[0]?.etag  ?? knownEtag;
+	} finally {
+		isUploading = false;
+	}
 }
 
 /**
@@ -390,6 +430,14 @@ export function schedulePush(onError) {
 			onError?.(/** @type {Error} */ (err));
 		}
 	}, UPLOAD_DEBOUNCE_MS);
+}
+
+/**
+ * Returns true while a push is scheduled OR actively running.
+ * Used by syncFromBox to avoid overwriting in-flight local changes.
+ */
+export function isPushPending() {
+	return uploadTimer !== null || isUploading;
 }
 
 /**
@@ -424,7 +472,10 @@ export function startPolling(callback) {
 	// only need to reload from there – no extra Box API call required.
 	bc.onmessage = async (e) => {
 		if (e.data?.type !== 'tasks-changed') return;
-		if (uploadTimer !== null) return; // we are the ones currently pushing
+		// Skip if we are currently pushing or have a push scheduled – our own
+		// local state is authoritative and must not be overwritten by a
+		// concurrent BroadcastChannel notification from the other tab.
+		if (isPushPending()) return;
 		await syncFromBox();
 		onRemoteChange?.();
 	};
@@ -433,9 +484,8 @@ export function startPolling(callback) {
 
 	pollTimer = setInterval(async () => {
 		if (!getToken()) return; // not logged in
-		// Skip polling while a local upload is still pending – avoids overwriting
-		// uncommitted local changes with the remote state.
-		if (uploadTimer !== null) return;
+		// Skip polling while a local upload is still pending or actively running.
+		if (isPushPending()) return;
 		try {
 			const remoteEtag = await fetchRemoteEtag();
 			if (remoteEtag === null) return;
