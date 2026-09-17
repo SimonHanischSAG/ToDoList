@@ -26,7 +26,7 @@
 
 	// task prop is fixed when opening → one-time initialisation is correct
 	const t      = task;
-	const isEdit = !!t;
+	let isEdit = $state(!!t);
 
 	let title       = $state(t?.title       ?? '');
 	let description = $state(t?.description ?? '');
@@ -239,6 +239,8 @@
 	async function handleSubmit(e) {
 		e?.preventDefault();
 		if (!title.trim()) return;
+		// Prevent duplicate creation: once saved as new task, isEdit is set to true
+		if (saving) return;
 		saving = true;
 		try {
 			if (isEdit && t) {
@@ -266,6 +268,8 @@
 						tags:        [...tags],
 						dueDate:     dueDate || null
 					});
+					// Switch to edit-like state to prevent duplicate creation on repeated saves
+					isEdit = true;
 				}
 		} finally {
 			saving = false;
