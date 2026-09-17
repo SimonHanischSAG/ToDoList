@@ -314,6 +314,7 @@ export async function addTask(data) {
 	await db.tasks.add(task);
 	_tasks = rankTasks([..._tasks, task]);
 	schedulePush(_onPushError);
+	return task;
 }
 
 /**

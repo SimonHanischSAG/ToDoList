@@ -26,6 +26,8 @@
 
 	// task prop is fixed when opening → one-time initialisation is correct
 	const t      = task;
+	/** After saving a new task, this holds the created task for subsequent saves */
+	let savedTask = $state(/** @type {import('$lib/model/task.js').Task|undefined} */ (undefined));
 	let isEdit = $state(!!t);
 
 	let title       = $state(t?.title       ?? '');
@@ -243,8 +245,10 @@
 		if (saving) return;
 		saving = true;
 		try {
-			if (isEdit && t) {
-					await updateTask(t.id, {
+			// Use the original task id (edit mode) or the id of the already-saved new task
+			const existingId = (t ?? savedTask)?.id;
+			if (existingId) {
+					await updateTask(existingId, {
 						title:       title.trim(),
 						description: description.trim(),
 						comments:    comments.trim(),
@@ -254,11 +258,12 @@
 						tags:        [...tags],
 						dueDate:     dueDate || null
 					});
-					if (markAsDone) {
-						await setStatus(t.id, 'done');
+					if (markAsDone && isEdit && t) {
+						await setStatus(existingId, 'done');
 					}
 				} else {
-					await addTask({
+					// First save of a new task — store the result to prevent duplicates
+					savedTask = await addTask({
 						title:       title.trim(),
 						description: description.trim(),
 						comments:    comments.trim(),
@@ -268,8 +273,6 @@
 						tags:        [...tags],
 						dueDate:     dueDate || null
 					});
-					// Switch to edit-like state to prevent duplicate creation on repeated saves
-					isEdit = true;
 				}
 		} finally {
 			saving = false;
