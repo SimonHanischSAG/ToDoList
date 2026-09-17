@@ -1,14 +1,10 @@
 /**
  * Box OAuth 2.0 authentication (PKCE flow)
  *
- * Each user logs in with their own Box account (IBM or private).
+ * Each user logs in with their own IBM Box account.
  * Data is stored in their personal Box folder.
  *
  * PKCE flow: no client secret needed – secure for SPAs.
- *
- * After every successful token acquisition the user profile is fetched via
- * GET /users/me so that the login e-mail (used to detect IBM accounts) is
- * always available without any additional user interaction.
  */
 
 import { browser } from '$app/environment';
@@ -20,12 +16,8 @@ const REDIRECT_URI = browser
 	? window.location.origin + window.location.pathname.replace(/\/$/, '') + '/'
 	: 'https://simonhanischsag.github.io/ToDoList/';
 
-const BOX_AUTH_URL  = 'https://account.box.com/api/oauth2/authorize';
+const BOX_AUTH_URL = 'https://account.box.com/api/oauth2/authorize';
 const BOX_TOKEN_URL = 'https://api.box.com/oauth2/token';
-const BOX_USER_URL  = 'https://api.box.com/2.0/users/me?fields=name,login';
-
-/** Domain suffix that identifies IBM Box accounts */
-const IBM_DOMAIN = '@ibm.com';
 
 const STORAGE_KEY_TOKEN   = 'box_access_token';
 const STORAGE_KEY_REFRESH = 'box_refresh_token';
@@ -132,7 +124,6 @@ export async function handleRedirect() {
 
 	const data = await res.json();
 	saveTokens(data);
-	await fetchAndSaveUser(data.access_token);
 
 	// Clear local task cache – Box is the leading source
 	localStorage.removeItem('ibmtodo_local');
@@ -218,8 +209,6 @@ export async function refreshToken() {
 			if (!res.ok) return false;
 			const data = await res.json();
 			saveTokens(data);
-			// Re-fetch user profile so login e-mail stays current after refresh
-			await fetchAndSaveUser(data.access_token);
 			return true;
 		} catch {
 			return false;
@@ -239,18 +228,6 @@ export function getUser() {
 	if (!browser) return null;
 	const raw = localStorage.getItem(STORAGE_KEY_USER);
 	return raw ? JSON.parse(raw) : null;
-}
-
-/**
- * Returns true when the logged-in user has an IBM Box account (@ibm.com).
- * Falls back to true when the login e-mail is not yet known (safe default
- * so that IBM users are never shown private branding by mistake).
- * @returns {boolean}
- */
-export function isIbmUser() {
-	const u = getUser();
-	if (!u?.login) return true; // unknown → assume IBM (safe default)
-	return u.login.toLowerCase().endsWith(IBM_DOMAIN);
 }
 
 /**
@@ -282,41 +259,6 @@ function saveTokens(data) {
 	const expiry = Date.now() + expiresIn * 1000;
 	localStorage.setItem(STORAGE_KEY_EXPIRY, String(expiry));
 
-	// token_extra_info may carry a name – use it as a quick pre-fill until
-	// fetchAndSaveUser() overwrites it with the full profile (name + login).
 	const userName = data.token_extra_info?.name ?? null;
-	if (userName) {
-		const existing = localStorage.getItem(STORAGE_KEY_USER);
-		// Only pre-fill when no profile has been fetched yet
-		if (!existing) {
-			localStorage.setItem(STORAGE_KEY_USER, JSON.stringify({ name: userName, login: '' }));
-		}
-	}
-}
-
-/**
- * Fetches GET /users/me and stores name + login e-mail in localStorage.
- * Called after every successful token acquisition (initial login + refresh).
- * Uses the freshly obtained token directly to avoid a timing issue where
- * localStorage might not yet reflect the new token.
- * @param {string} accessToken  The newly issued access token
- * @returns {Promise<void>}
- */
-async function fetchAndSaveUser(accessToken) {
-	if (!browser || !accessToken) return;
-	try {
-		const res = await fetch(BOX_USER_URL, {
-			headers: { Authorization: `Bearer ${accessToken}` }
-		});
-		if (!res.ok) return;
-		const { name, login } = await res.json();
-		if (name || login) {
-			localStorage.setItem(STORAGE_KEY_USER, JSON.stringify({
-				name:  name  ?? '',
-				login: login ?? ''
-			}));
-		}
-	} catch {
-		// Non-fatal: user profile is optional, auth itself succeeded
-	}
+	if (userName) localStorage.setItem(STORAGE_KEY_USER, JSON.stringify({ name: userName, login: '' }));
 }
