@@ -303,12 +303,15 @@
 	open
 >
 	<div class="relative bg-white rounded-t-2xl sm:rounded-xl w-full max-w-2xl p-8 space-y-4 shadow-xl max-h-[95vh] overflow-y-auto">
-		<div class="flex flex-wrap items-center gap-2">
-			<div class="min-w-0 flex-1">
-				<h2 class="font-bold text-ibm-text">{isEdit ? 'Edit task' : 'New task'}</h2>
-				{#if isEdit && t?.createdAt}
-					<p class="text-xs text-ibm-text-muted mt-0.5">Created: {new Date(t.createdAt).toLocaleString()}</p>
-				{/if}
+		<div class="flex flex-col gap-2">
+			<div class="flex items-start justify-between gap-2">
+				<div class="min-w-0">
+					<h2 class="font-bold text-ibm-text">{isEdit ? 'Edit task' : 'New task'}</h2>
+					{#if isEdit && t?.createdAt}
+						<p class="text-xs text-ibm-text-muted mt-0.5">Created: {new Date(t.createdAt).toLocaleString()}</p>
+					{/if}
+				</div>
+				<button onclick={onclose} tabindex="-1" class="text-ibm-text-muted hover:text-ibm-text shrink-0" aria-label="Close" title="Close window">✕</button>
 			</div>
 			<div class="flex items-center gap-2 flex-wrap">
 				<button
@@ -340,7 +343,6 @@
 						Delete
 					</button>
 				{/if}
-				<button onclick={onclose} tabindex="-1" class="text-ibm-text-muted hover:text-ibm-text ml-1" aria-label="Close" title="Close window">✕</button>
 			</div>
 		</div>
 
