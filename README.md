@@ -10,8 +10,9 @@ Smart, serverless todo management for IBM employees as a Progressive Web App (PW
 - ⭐ **Focus mode** – shows the 5 most important tasks each day
 - 🔍 **Full-text search** + filter by area and topic
 - 🔄 **Multi-device sync** – automatic polling every 30 s, optimistic locking
-- 🔐 **IBM login** via Box OAuth 2.0 (PKCE flow, no central backend)
-- ☁️ **Data stored in your Box** – each user stores data in their own Box account
+- 📁 **Data stored in your Box folder** – the app reads/writes `todos.json` in a local Box Drive folder
+  (Edge/Chrome, desktop). Box Drive syncs and protects the data, no OAuth app required.
+- 🔐 **Box OAuth 2.0 (PKCE)** is still included as an alternative backend (currently disabled by IBM)
 - 📴 **Offline-capable** – Service Worker caches the app shell
 
 ---
@@ -211,6 +212,19 @@ UI preferences are stored separately in `prefs.json`.
   }
 ]
 ```
+
+---
+
+## Storage backends
+
+| Backend | Description | Mobile |
+|---|---|---|
+| `folder` (default) | Local folder, e.g. `C:\Users\<user>\Box\IBMTodoStorage`, chosen once via "Connect Box folder". Needs Edge/Chrome on desktop. After a browser restart, click "Connect Box folder" again (choose "Allow on every visit"). | no |
+| `box` | Box Content API with OAuth 2.0 PKCE. Requires an enabled Box app (see Setup). | yes |
+
+Switching: set the GitHub repository variable `STORAGE_BACKEND` to `box` or `folder` and re-run the
+deploy workflow. Locally: `VITE_STORAGE_BACKEND` in `.env.local`. Quick browser test:
+`localStorage.setItem('ibmtodo_backend', 'box')` and reload.
 
 ---
 

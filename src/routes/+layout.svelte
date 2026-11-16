@@ -8,7 +8,7 @@
 	import { browser } from '$app/environment';
 	import { loadTasks, initialSync, stopSync, tasks } from '$lib/stores/taskStore.svelte.js';
 	import { exportToFile, importFromFile, schedulePush } from '$lib/storage/index.js';
-	import { login, handleRedirect, getToken, getUser, logout as boxLogout, startTokenRefreshTimer, refreshToken } from '$lib/auth/box.js';
+	import { login, handleRedirect, getToken, getUser, logout as boxLogout, startTokenRefreshTimer, refreshToken, LOGIN_LABEL, LOGOUT_LABEL } from '$lib/auth/index.js';
 	import StoragePrompt from '$lib/components/StoragePrompt.svelte';
 
 	const STORAGE_CHOICE_KEY = 'ibmtodo_storage_choice'; // 'box' | 'local'
@@ -21,7 +21,24 @@
 	let loggedIn = $state(false);
 	let user = $state(/** @type {{ name: string, login: string } | null} */ (null));
 
-	onMount(async () => {
+	/** After the folder has been (re-)connected by a user click: start syncing without reload */
+	async function onFolderConnected() {
+		loggedIn = !!getToken();
+		user = getUser();
+		if (!loggedIn) return;
+		localStorage.setItem(STORAGE_CHOICE_KEY, 'box');
+		showPrompt = false;
+		tasks.dismissPushError();
+		await initialSync();
+	}
+
+	onMount(() => {
+		window.addEventListener('folder-connected', onFolderConnected);
+		init();
+		return () => window.removeEventListener('folder-connected', onFolderConnected);
+	});
+
+	async function init() {
 		if (!browser) return;
 
 		// Process OAuth redirect (returning from Box login)
@@ -55,7 +72,7 @@
 		await loadTasks();
 		await initialSync();
 		ready = true;
-	});
+	}
 
 	/** User selects local storage */
 	function chooseLocal() {
@@ -126,7 +143,7 @@
 					</label>
 					<!-- Sync indicator: shows last remote sync or active sync spinner -->
 					{#if tasks.syncing}
-						<span class="text-yellow-400 text-xs" title="Syncing with Box…">⟳ Sync…</span>
+						<span class="text-yellow-400 text-xs" title="Syncing with folder…">⟳ Sync…</span>
 					{:else if tasks.lastSync}
 						<span class="text-gray-500 text-xs" title="Last synced: {tasks.lastSync}">✓ {formatTime(tasks.lastSync)}</span>
 					{/if}
@@ -136,9 +153,9 @@
 					<button
 						onclick={logout}
 						class="text-gray-400 hover:text-white text-xs transition-colors"
-						title="Box logout"
+						title={LOGOUT_LABEL}
 					>
-						Logout
+						{LOGOUT_LABEL}
 					</button>
 				{:else}
 					<!-- Not logged in: login button -->
@@ -146,7 +163,7 @@
 						onclick={login}
 						class="bg-ibm-blue hover:bg-ibm-blue-dark text-white text-xs font-semibold px-3 py-1 rounded transition-colors"
 					>
-						Sign in with Box
+						{LOGIN_LABEL}
 					</button>
 				{/if}
 			</div>

@@ -5,7 +5,8 @@
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import { tasks, setStatus, deleteTask } from '$lib/stores/taskStore.svelte.js';
-	import { login } from '$lib/auth/box.js';
+	import { login, LOGIN_LABEL } from '$lib/auth/index.js';
+	import { BACKEND } from '$lib/backend.js';
 	import TaskCard from '$lib/components/TaskCard.svelte';
 	import AreaFilter from '$lib/components/AreaFilter.svelte';
 	import FocusView from '$lib/components/FocusView.svelte';
@@ -36,7 +37,7 @@
 	<!-- Sync indicator -->
 	{#if tasks.syncing}
 		<div class="bg-blue-50 border border-blue-200 text-blue-800 text-xs px-3 py-2 rounded mb-3">
-			⟳ Syncing with Box...
+			⟳ Syncing with {BACKEND === 'box' ? 'Box' : 'folder'}...
 		</div>
 	{/if}
 
@@ -54,12 +55,12 @@
 
 	{#if tasks.sessionExpired}
 		<div class="bg-amber-50 border border-amber-300 text-amber-900 text-sm px-4 py-3 rounded mb-3 flex items-center justify-between gap-3">
-			<span>⚠ Your session has expired. Please sign in again.</span>
+			<span>⚠ {BACKEND === 'box' ? 'Your session has expired. Please sign in again.' : 'The data folder is not connected. Please reconnect it.'}</span>
 			<button
 				onclick={login}
 				class="shrink-0 bg-ibm-blue hover:bg-ibm-blue-dark text-white text-xs font-semibold px-3 py-1.5 rounded transition-colors"
 			>
-				Sign in
+				{LOGIN_LABEL}
 			</button>
 		</div>
 	{:else if tasks.error}

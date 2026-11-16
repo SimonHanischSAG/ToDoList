@@ -35,6 +35,8 @@ jobs:
         env:
           # GitHub Pages deployt unter /ToDoList/ – SvelteKit braucht den base-Pfad
           BASE_PATH: /ToDoList
+          # 'folder' (default) or 'box' – set repository variable STORAGE_BACKEND to switch
+          VITE_STORAGE_BACKEND: ${{ vars.STORAGE_BACKEND || 'folder' }}
           VITE_BOX_CLIENT_ID: ${{ secrets.VITE_BOX_CLIENT_ID }}
           VITE_BOX_CLIENT_SECRET: ${{ secrets.VITE_BOX_CLIENT_SECRET }}
 

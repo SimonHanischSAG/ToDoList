@@ -4,7 +4,8 @@
   The choice is saved in localStorage and not shown again.
 -->
 <script>
-	import { login } from '$lib/auth/box.js';
+	import { login, LOGIN_LABEL } from '$lib/auth/index.js';
+	import { BACKEND } from '$lib/backend.js';
 
 	/** @type {{ onlocal: () => void }} */
 	let { onlocal } = $props();
@@ -25,10 +26,15 @@
 			onclick={login}
 			class="w-full bg-ibm-blue hover:bg-ibm-blue-dark text-white text-sm font-semibold py-3 px-4 rounded-md transition-colors mb-3 text-left"
 		>
-			<div class="font-semibold mb-0.5">☁ Sign in with Box (recommended)</div>
+			<div class="font-semibold mb-0.5">☁ {LOGIN_LABEL} (recommended)</div>
 			<div class="text-xs font-normal opacity-90">
-				Data is stored securely in your personal IBM Box account –
-				available across all devices, no data loss.
+				{#if BACKEND === 'box'}
+					Data is stored securely in your personal IBM Box account –
+					available across all devices, no data loss.
+				{:else}
+					Select your local Box Drive folder (e.g. Box\IBMTodoStorage). Box Drive
+					syncs and protects the data. Requires Edge or Chrome on desktop.
+				{/if}
 			</div>
 		</button>
 

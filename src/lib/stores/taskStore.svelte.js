@@ -5,7 +5,7 @@
 
 import { db } from '../storage/db.js';
 import { schedulePush, syncFromStorage, retryFailedSyncs, startPolling, stopPolling, loadPrefs, schedulePrefs } from '../storage/index.js';
-import { getToken, login as boxLogin } from '../auth/box.js';
+import { getToken, login as boxLogin } from '../auth/index.js';
 import { rankTasks, getFocusTasks, getAreas, getTopics } from '../engine/priority.js';
 import { createTask, normalizeTask } from '../model/task.js';
 
@@ -301,7 +301,11 @@ export function stopSync() {
  */
 function _onPushError(err) {
 	const msg = String(err.message ?? err);
-	if (msg.startsWith('CONFLICT')) {
+	if (msg.includes('SESSION_EXPIRED')) {
+		// Folder not connected / permission lost → show the reconnect banner
+		_sessionExpired = true;
+		_pushError = 'The data folder is not connected – your changes are kept locally and will be saved after reconnecting.';
+	} else if (msg.startsWith('CONFLICT')) {
 		_pushError = 'Sync conflict: a concurrent change could not be merged automatically. Please reload the page to get the latest version.';
 	} else {
 		_pushError = `Your changes could not be saved: ${msg}`;

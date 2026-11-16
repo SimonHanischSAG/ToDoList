@@ -33,27 +33,37 @@ Kein Backend, kein zentraler Server, keine Datenbank. Jeder Nutzer speichert sei
 | Styling | Tailwind CSS 3 |
 | PWA | vite-plugin-pwa (Workbox) |
 | Lokaler Cache | Dexie.js (IndexedDB) |
-| Auth (bereit) | Box OAuth 2.0 PKCE (`src/lib/auth/box.js`) |
+| Auth / Storage | Umschaltbar (`src/lib/backend.js`): lokaler Ordner (`auth/folder.js`, `storage/folder.js`, aktiv) oder Box OAuth 2.0 PKCE (`auth/box.js`, `storage/box.js`) |
 | Hosting | GitHub Pages (via GitHub Actions) |
 | CI/CD | `.github/workflows/deploy.yml` |
 
 ---
 
-## Storage-Modus umschalten
+## Backend umschalten (folder ⇄ box)
 
-Aktuell aktiv: **Box Cloud-Sync** (IBM Box OAuth 2.0 PKCE).
+Aktuell aktiv: **`folder`** – die App liest/schreibt `todos.json` und `prefs.json` direkt in einem
+lokalen Ordner (File System Access API), z. B. dem Box-Drive-Ordner
+`C:\Users\<user>\Box\IBMTodoStorage`. Box Drive synchronisiert die Dateien; die App braucht keine
+Box-OAuth-App (IBM hat die Box-App deaktiviert). Nur Edge/Chrome am Desktop, kein iOS.
 
-Datei: [`src/lib/storage/index.js`](src/lib/storage/index.js)
+Der Schalter liegt in [`src/lib/backend.js`](src/lib/backend.js) und steuert gemeinsam
+[`src/lib/auth/index.js`](src/lib/auth/index.js) und [`src/lib/storage/index.js`](src/lib/storage/index.js).
 
-```js
-// Box Cloud-Sync (aktuell aktiv):
-export { syncFromBox as syncFromStorage, schedulePush, retryFailedSyncs } from './box.js';
+**Zurück auf Box-OAuth, falls die Box-App wieder erlaubt wird:**
+1. GitHub → Settings → Secrets and variables → Actions → **Variables**: `STORAGE_BACKEND` = `box`
+2. Secrets `VITE_BOX_CLIENT_ID` / `VITE_BOX_CLIENT_SECRET` müssen gesetzt sein (neues Secret erzeugen, das alte stand im öffentlichen Bundle!)
+3. Workflow „Deploy to GitHub Pages“ neu starten (Run workflow).
 
-// Lokal (Fallback, kein Login):
-// export { syncFromLocal as syncFromStorage, schedulePush, retryFailedSyncs, exportToFile, importFromFile } from './local.js';
-```
+Weitere Möglichkeiten: lokal `VITE_STORAGE_BACKEND=box` in `.env.local`, oder im Browser
+`localStorage.setItem('ibmtodo_backend','box')` + Reload (zurück: `removeItem`).
 
-**Box-Setup:**
+**Folder-Backend – Hinweise:**
+- Nach Reload/Browser-Neustart muss die Schreibfreigabe per Klick („Connect Box folder“) erneuert werden;
+  im Dialog „Bei jedem Besuch zulassen“ wählen.
+- Konflikte: Vergleich über `lastModified` statt ETag, Merge nach `updatedAt` (neuer gewinnt).
+- Ohne Verbindung bleiben Änderungen im lokalen IndexedDB-Cache und werden nach dem Verbinden geschrieben.
+
+**Box-Setup (nur für Backend `box`):**
 - Client ID: GitHub Secret `VITE_BOX_CLIENT_ID` (nicht im Code!)
 - Client Secret: GitHub Secret `VITE_BOX_CLIENT_SECRET` (nicht im Code!)
 - Redirect URI: `https://simonhanischsag.github.io/ToDoList/`
@@ -66,12 +76,16 @@ export { syncFromBox as syncFromStorage, schedulePush, retryFailedSyncs } from '
 src/
   lib/
     auth/
-      box.js              Box OAuth 2.0 PKCE-Flow (fertig, wartet auf IBM-Freigabe)
+      index.js            Wählt Auth-Backend anhand von backend.js
+      folder.js           Aktiv: lokaler Ordner (File System Access API)
+      box.js              Box OAuth 2.0 PKCE-Flow (deaktiviert durch IBM)
       msal.js             Azure AD / OneDrive Auth (Fallback, nicht aktiv)
+    backend.js            ← Schalter: 'folder' | 'box'
     storage/
-      index.js            ← HIER Storage-Backend umschalten
-      local.js            Aktiv: localStorage + JSON Export/Import
-      box.js              Bereit: Box Cloud-Sync
+      index.js            Wählt Storage-Backend anhand von backend.js
+      folder.js           Aktiv: todos.json/prefs.json im lokalen Ordner
+      local.js            Export/Import als JSON-Datei
+      box.js              Box Cloud-Sync (nur Backend 'box')
       db.js               Dexie.js IndexedDB-Schema
     engine/
       priority.js         Score-Formel: Deadline + Aging + Dependencies
@@ -168,7 +182,7 @@ Beispiel: `normal` (45) + überfällig (+25) = Score **70** → landet zwischen 
 
 ## Offene Punkte
 
-- [ ] IBM Box Admin-Freigabe abwarten (Client ID produktiv schalten)
+- [ ] IBM Box Admin-Freigabe abwarten (Client ID produktiv schalten), dann Backend auf `box` zurückschalten (siehe oben)
 - [ ] Erledigte Tasks anzeigen / Archiv-Ansicht
 - [ ] Task-Abhängigkeiten (blockedBy) in der UI editierbar machen
 - [ ] Push Notifications für Deadlines (iOS 16.4+, `vite-plugin-pwa` vorbereitet)
