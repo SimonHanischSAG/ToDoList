@@ -112,6 +112,7 @@ export const tasks = {
 			result = result.filter(t =>
 				t.title.toLowerCase().includes(q) ||
 				t.description.toLowerCase().includes(q) ||
+				(t.comments ?? '').toLowerCase().includes(q) ||
 				t.area.toLowerCase().includes(q) ||
 				(t.topic ?? '').toLowerCase().includes(q) ||
 				t.tags.some(tag => tag.toLowerCase().includes(q))
@@ -129,6 +130,7 @@ export const tasks = {
 			result = result.filter(t =>
 				t.title.toLowerCase().includes(q) ||
 				t.description.toLowerCase().includes(q) ||
+				(t.comments ?? '').toLowerCase().includes(q) ||
 				t.area.toLowerCase().includes(q) ||
 				(t.topic ?? '').toLowerCase().includes(q) ||
 				t.tags.some(tag => tag.toLowerCase().includes(q))
@@ -168,6 +170,7 @@ export const tasks = {
 			result = result.filter(t =>
 				t.title.toLowerCase().includes(q) ||
 				t.description.toLowerCase().includes(q) ||
+				(t.comments ?? '').toLowerCase().includes(q) ||
 				t.area.toLowerCase().includes(q) ||
 				(t.topic ?? '').toLowerCase().includes(q) ||
 				t.tags.some(tag => tag.toLowerCase().includes(q))
