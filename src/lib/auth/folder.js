@@ -22,6 +22,22 @@ const kvDb = new Dexie('IBMTodoFolder');
 kvDb.version(1).stores({ kv: 'key' });
 
 const HANDLE_KEY = 'dir';
+const PERMISSION_TIMEOUT_MS = 1500;
+
+/**
+ * queryPermission()/requestPermission() on a stored handle can hang indefinitely
+ * (observed in Edge after a restart). Resolves with 'timeout' instead of blocking.
+ * @param {FileSystemDirectoryHandle} handle
+ * @param {'queryPermission' | 'requestPermission'} method
+ * @returns {Promise<string>}
+ */
+function permissionWithTimeout(handle, method) {
+	return Promise.race([
+		// @ts-ignore – not in the default TS DOM typings
+		handle[method]({ mode: 'readwrite' }),
+		new Promise((resolve) => setTimeout(() => resolve('timeout'), PERMISSION_TIMEOUT_MS))
+	]);
+}
 
 /** @type {FileSystemDirectoryHandle | null} */
 let _handle = null;
@@ -46,7 +62,7 @@ export async function ensureDirHandle() {
 	try {
 		const row = await kvDb.table('kv').get(HANDLE_KEY);
 		const handle = row?.handle;
-		if (handle && (await handle.queryPermission({ mode: 'readwrite' })) === 'granted') {
+		if (handle && (await permissionWithTimeout(handle, 'queryPermission')) === 'granted') {
 			_handle = handle;
 		}
 	} catch (err) {
@@ -70,7 +86,7 @@ export async function handleRedirect() {
 		const handle = row?.handle;
 		console.info(`[Folder Auth] IndexedDB read done after ${ms()} – handle ${handle ? 'found' : 'missing'}`);
 		if (handle) {
-			const perm = await handle.queryPermission({ mode: 'readwrite' });
+			const perm = await permissionWithTimeout(handle, 'queryPermission');
 			console.info(`[Folder Auth] queryPermission = "${perm}" after ${ms()}`);
 			if (perm === 'granted') {
 				_handle = handle;
@@ -98,7 +114,10 @@ export async function login() {
 	try {
 		const row = await kvDb.table('kv').get(HANDLE_KEY);
 		const stored = row?.handle;
-		if (stored && (await stored.requestPermission({ mode: 'readwrite' })) === 'granted') {
+		const t0 = performance.now();
+		const perm = stored ? await permissionWithTimeout(stored, 'requestPermission') : null;
+		if (stored) console.info(`[Folder Auth] requestPermission = "${perm}" after ${Math.round(performance.now() - t0)} ms`);
+		if (perm === 'granted') {
 			_handle = stored;
 		} else {
 			// @ts-ignore – not yet part of the default TS DOM typings
