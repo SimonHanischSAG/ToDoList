@@ -108,7 +108,7 @@ export const tasks = {
 		if (_activeTopics.length > 0) result = result.filter(t => _activeTopics.includes(t.topic));
 		if (_minScore > 0) result = result.filter(t => t.score >= _minScore);
 		if (_searchQuery.trim()) {
-			const q = _searchQuery.toLowerCase();
+			const q = _searchQuery.trim().toLowerCase();
 			result = result.filter(t =>
 				t.title.toLowerCase().includes(q) ||
 				t.description.toLowerCase().includes(q) ||
@@ -125,7 +125,7 @@ export const tasks = {
 		if (_activeAreas.length > 0) result = result.filter(t => _activeAreas.includes(t.area));
 		if (_activeTopics.length > 0) result = result.filter(t => _activeTopics.includes(t.topic));
 		if (_searchQuery.trim()) {
-			const q = _searchQuery.toLowerCase();
+			const q = _searchQuery.trim().toLowerCase();
 			result = result.filter(t =>
 				t.title.toLowerCase().includes(q) ||
 				t.description.toLowerCase().includes(q) ||
@@ -164,7 +164,7 @@ export const tasks = {
 		let result = _tasks.filter(t => t.status === 'open');
 		if (_activeAreas.length > 0) result = result.filter(t => _activeAreas.includes(t.area));
 		if (_searchQuery.trim()) {
-			const q = _searchQuery.toLowerCase();
+			const q = _searchQuery.trim().toLowerCase();
 			result = result.filter(t =>
 				t.title.toLowerCase().includes(q) ||
 				t.description.toLowerCase().includes(q) ||
