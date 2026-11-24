@@ -69,9 +69,12 @@
 			return;
 		}
 
+		// Show the app from the local cache right away; the remote sync runs in the
+		// background so a slow/blocked folder (e.g. Box Drive not started yet after
+		// a reboot) can never leave the page stuck on "Loading…".
 		await loadTasks();
-		await initialSync();
 		ready = true;
+		await initialSync();
 	}
 
 	/** User selects local storage */
