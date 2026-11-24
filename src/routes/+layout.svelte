@@ -15,6 +15,7 @@
 
 	let { children } = $props();
 	let ready = $state(false);
+	let loadingStep = $state('Starting…');
 	let showPrompt = $state(false);
 	let showImport = $state(false);
 	let importMsg = $state('');
@@ -34,20 +35,48 @@
 
 	onMount(() => {
 		window.addEventListener('folder-connected', onFolderConnected);
-		init();
+		init().catch((err) => {
+			// Never stay on the loading screen because of an unexpected startup error
+			console.error('[Init] Startup failed:', err);
+			ready = true;
+		});
 		return () => window.removeEventListener('folder-connected', onFolderConnected);
 	});
+
+	/**
+	 * Resolves with the promise result, or with `fallback` if it does not settle in time.
+	 * Prevents a hanging browser API (IndexedDB, folder permission) from blocking startup.
+	 * @template T
+	 * @param {string} step
+	 * @param {Promise<T>} promise
+	 * @param {T} fallback
+	 * @param {number} ms
+	 * @returns {Promise<T>}
+	 */
+	function withTimeout(step, promise, fallback, ms = 5000) {
+		loadingStep = step;
+		return new Promise((resolve) => {
+			const timer = setTimeout(() => {
+				console.warn(`[Init] "${step}" did not finish within ${ms} ms – continuing.`);
+				resolve(fallback);
+			}, ms);
+			promise.then(
+				(v) => { clearTimeout(timer); resolve(v); },
+				(err) => { clearTimeout(timer); console.warn(`[Init] "${step}" failed:`, err); resolve(fallback); }
+			);
+		});
+	}
 
 	async function init() {
 		if (!browser) return;
 
-		// Process OAuth redirect (returning from Box login)
-		await handleRedirect();
+		// Process OAuth redirect (returning from Box login) / restore folder handle
+		await withTimeout('Restoring connection…', handleRedirect(), false);
 
 		// If no valid access token but a refresh token exists
 		// → silent background refresh (important on iPhone after closing tab)
 		if (!getToken() && localStorage.getItem('box_refresh_token')) {
-			await refreshToken();
+			await withTimeout('Refreshing session…', refreshToken(), false);
 		}
 
 		loggedIn = !!getToken();
@@ -64,7 +93,7 @@
 		if (!choice && !loggedIn) {
 			showPrompt = true;
 			// Load app content from local cache anyway
-			await loadTasks();
+			await withTimeout('Loading local cache…', loadTasks(), undefined, 8000);
 			ready = true;
 			return;
 		}
@@ -72,7 +101,7 @@
 		// Show the app from the local cache right away; the remote sync runs in the
 		// background so a slow/blocked folder (e.g. Box Drive not started yet after
 		// a reboot) can never leave the page stuck on "Loading…".
-		await loadTasks();
+		await withTimeout('Loading local cache…', loadTasks(), undefined, 8000);
 		ready = true;
 		await initialSync();
 	}
@@ -122,6 +151,7 @@
 		<div class="text-center">
 			<div class="text-4xl font-bold text-ibm-blue mb-2">IBM ToDo List</div>
 			<div class="text-ibm-text-muted text-sm">Loading…</div>
+			<div class="text-ibm-text-muted text-xs mt-1">{loadingStep}</div>
 		</div>
 	</div>
 
