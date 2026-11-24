@@ -62,12 +62,20 @@ export async function ensureDirHandle() {
  */
 export async function handleRedirect() {
 	if (!browser) return false;
+	const t0 = performance.now();
+	const ms = () => Math.round(performance.now() - t0) + ' ms';
 	try {
+		console.info('[Folder Auth] Reading stored handle from IndexedDB…');
 		const row = await kvDb.table('kv').get(HANDLE_KEY);
 		const handle = row?.handle;
-		if (handle && (await handle.queryPermission({ mode: 'readwrite' })) === 'granted') {
-			_handle = handle;
-			return true;
+		console.info(`[Folder Auth] IndexedDB read done after ${ms()} – handle ${handle ? 'found' : 'missing'}`);
+		if (handle) {
+			const perm = await handle.queryPermission({ mode: 'readwrite' });
+			console.info(`[Folder Auth] queryPermission = "${perm}" after ${ms()}`);
+			if (perm === 'granted') {
+				_handle = handle;
+				return true;
+			}
 		}
 	} catch (err) {
 		console.warn('[Folder Auth] Restore failed:', err);
